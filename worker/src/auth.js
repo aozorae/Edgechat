@@ -39,9 +39,18 @@ export async function hashPassword(password, salt = null) {
   };
 }
 
+function timingSafeEqual(a, b) {
+  const bytesA = encoder.encode(a);
+  const bytesB = encoder.encode(b);
+  if (bytesA.length !== bytesB.length) return false;
+  let diff = 0;
+  for (let i = 0; i < bytesA.length; i++) diff |= bytesA[i] ^ bytesB[i];
+  return diff === 0;
+}
+
 export async function verifyPassword(password, passwordHash, passwordSalt) {
   const derived = await hashPassword(password, passwordSalt);
-  return derived.hash === passwordHash;
+  return timingSafeEqual(derived.hash, passwordHash);
 }
 
 function toSessionVersion(value) {
