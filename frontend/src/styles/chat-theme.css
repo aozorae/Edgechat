@@ -1,0 +1,39 @@
+/* Hallmark · macrostructure: Workbench · tone: calm utility · anchor hue: green
+ * 视觉自评：层级 4 / 实现 4 / 适配产品 5 / 克制 5；浏览器验收由交接代理完成。
+ * 聊天工作区独立使用语义令牌，避免继续把业务配色散落在组件里，
+ * 也不改变登录与管理后台已有的玻璃主题。
+ */
+:root {
+  --chat-paper: oklch(100% 0 0);
+  --chat-canvas: oklch(96% 0.009 155);
+  --chat-rail: oklch(94% 0.012 155);
+  --chat-hover: oklch(96.5% 0.008 155);
+  --chat-selected: oklch(93% 0.03 155);
+  --chat-pressed: oklch(89% 0.035 155);
+  --chat-outgoing: oklch(94% 0.045 145);
+  --chat-ink: oklch(27% 0.024 165);
+  --chat-muted: oklch(49% 0.022 165);
+  --chat-subtle: oklch(53% 0.02 165);
+  --chat-line: oklch(90% 0.012 155);
+  --chat-accent: oklch(49% 0.094 169);
+  --chat-accent-hover: oklch(43% 0.084 169);
+  --chat-accent-pressed: oklch(37% 0.074 169);
+  --chat-danger: oklch(49% 0.17 27);
+  --chat-danger-soft: oklch(96% 0.02 27);
+  --chat-disabled: oklch(91% 0.016 155);
+  --chat-online: oklch(54% 0.12 155);
+  --chat-scrollbar: oklch(65% 0.02 155 / 0.45);
+  --chat-scrim: oklch(20% 0.025 165 / 0.36);
+  --chat-shadow: 0 1px 2px oklch(25% 0.025 165 / 0.08);
+  --chat-shadow-panel: 0 12px 36px oklch(25% 0.025 165 / 0.12);
+  /* 中英文均沿用系统无衬线字体，聊天正文不引入外部字体请求。 */
+  --chat-font: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --chat-font-heading: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --chat-control: 44px;
+  --chat-radius: 12px;
+  --chat-space-xs: 4px;
+  --chat-space-sm: 8px;
+  --chat-space-md: 12px;
+  --chat-space-lg: 16px;
+  --chat-space-xl: 24px;
+}

@@ -38,7 +38,9 @@ const emit = defineEmits(["select"]);
 			:key="item.key"
 			type="button"
 			class="sidebar-item"
-			:class="{ 'sidebar-item--active': activeKey === item.key }"
+			:class="{ 'sidebar-item--active': activeKey === item.key, 'sidebar-item--unread': item.unreadCount > 0 }"
+			:aria-current="activeKey === item.key ? 'true' : undefined"
+			:title="item.title"
 			@click="emit('select', item)"
 		>
 			<UiAvatar
@@ -80,7 +82,8 @@ const emit = defineEmits(["select"]);
 	min-height: 0;
 	overflow-y: auto;
 	overflow-x: hidden;
-	padding: 0;
+	padding: 0 0 8px;
+	scrollbar-gutter: stable;
 	touch-action: pan-y;
 }
 
@@ -90,7 +93,7 @@ const emit = defineEmits(["select"]);
 
 .sidebar-list::-webkit-scrollbar-thumb {
 	border-radius: 2px;
-	background: rgba(0, 0, 0, 0.15);
+	background: var(--chat-scrollbar);
 }
 
 .sidebar-hint {
@@ -98,7 +101,7 @@ const emit = defineEmits(["select"]);
 	align-items: center;
 	justify-content: center;
 	padding: 24px 8px;
-	color: #8696a0;
+	color: var(--chat-subtle);
 	font-size: 13px;
 }
 
@@ -106,9 +109,10 @@ const emit = defineEmits(["select"]);
 	display: flex;
 	align-items: center;
 	gap: 12px;
-	width: calc(100% - 16px);
-	margin: 4px 8px;
-	padding: 12px 16px;
+	width: calc(100% - 24px);
+	min-height: 80px;
+	margin: 2px 12px;
+	padding: 12px;
 	border: none;
 	border-radius: 12px;
 	background: transparent;
@@ -119,20 +123,31 @@ const emit = defineEmits(["select"]);
 }
 
 .sidebar-item:hover {
-	background: #f5f6f6;
+	background: var(--chat-hover);
 }
 
 .sidebar-item:active {
 	background: rgba(0, 0, 0, 0.08);
 }
 
-.sidebar-item--active {
-	background: #f0f2f5;
+.sidebar-item--active,
+.sidebar-item--active:hover {
+	background: var(--chat-selected);
+	box-shadow: inset 3px 0 var(--chat-accent);
+}
+
+.sidebar-item:focus-visible {
+	outline: 2px solid var(--chat-accent);
+	outline-offset: -2px;
 }
 
 /* biome-ignore lint/correctness/noUnknownPseudoClass: Vue deep selector */
 .sidebar-item :deep(.ui-avatar) {
 	flex-shrink: 0;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	box-shadow: none;
 }
 
 .sidebar-label-group {
@@ -149,7 +164,7 @@ const emit = defineEmits(["select"]);
 
 .sidebar-item__top strong {
 	overflow: hidden;
-	color: #111b21;
+	color: var(--chat-ink);
 	font-size: 15px;
 	font-weight: 500;
 	text-overflow: ellipsis;
@@ -158,8 +173,9 @@ const emit = defineEmits(["select"]);
 
 .sidebar-item__time {
 	flex-shrink: 0;
-	color: #667781;
+	color: var(--chat-muted);
 	font-size: 12px;
+	font-variant-numeric: tabular-nums;
 }
 
 .sidebar-item__bottom {
@@ -167,7 +183,7 @@ const emit = defineEmits(["select"]);
 	align-items: center;
 	gap: 8px;
 	min-width: 0;
-	margin-top: 4px;
+	margin-top: 6px;
 }
 
 .sidebar-item__preview {
@@ -175,10 +191,23 @@ const emit = defineEmits(["select"]);
 	min-width: 0;
 	margin: 0;
 	overflow: hidden;
-	color: #667781;
+	color: var(--chat-muted);
 	font-size: 13px;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.sidebar-item--unread .sidebar-item__preview {
+	color: var(--chat-ink);
+}
+
+.sidebar-item--unread .sidebar-item__top strong {
+	font-weight: 700;
+}
+
+.sidebar-item--unread .sidebar-item__time {
+	color: var(--chat-accent);
+	font-weight: 600;
 }
 
 .sidebar-muted-indicator {
@@ -186,7 +215,7 @@ const emit = defineEmits(["select"]);
 	flex: 0 0 auto;
 	align-items: center;
 	justify-content: center;
-	color: #8696a0;
+	color: var(--chat-subtle);
 }
 
 .sidebar-unread-badge {
@@ -194,12 +223,12 @@ const emit = defineEmits(["select"]);
 	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
-	min-width: 20px;
-	height: 20px;
+	min-width: 22px;
+	height: 22px;
 	padding: 0 6px;
 	border-radius: 999px;
-	background: #25d366;
-	color: #ffffff;
+	background: var(--chat-accent);
+	color: var(--chat-paper);
 	font-size: 11px;
 	font-variant-numeric: tabular-nums;
 	font-weight: 700;
@@ -211,7 +240,7 @@ const emit = defineEmits(["select"]);
 	flex: 0 0 auto;
 	align-items: center;
 	gap: 2px;
-	color: #d93025;
+	color: var(--chat-danger);
 	font-size: 11px;
 	font-weight: 700;
 	white-space: nowrap;
@@ -221,19 +250,28 @@ const emit = defineEmits(["select"]);
 	.sidebar-list {
 		padding-bottom: max(8px, env(safe-area-inset-bottom));
 		overscroll-behavior: contain;
+		scrollbar-gutter: auto;
 	}
 
 	.sidebar-item {
 		width: 100%;
-		min-height: 68px;
+		min-height: 80px;
 		margin: 0;
 		padding: 11px max(16px, env(safe-area-inset-right)) 11px
 			max(16px, env(safe-area-inset-left));
 		border-radius: 0;
 	}
 
-	.sidebar-item + .sidebar-item {
-		border-top: 1px solid #f0f2f5;
+	/* 分隔线从正文起笔，避免头像和内容被粗重的整行边框割开。 */
+	.sidebar-item { position: relative; }
+	.sidebar-item + .sidebar-item::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		right: 16px;
+		left: 72px;
+		height: 1px;
+		background: var(--chat-line);
 	}
 }
 

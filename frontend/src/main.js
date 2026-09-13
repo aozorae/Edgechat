@@ -17,6 +17,7 @@ import './styles/admin.css';
 import './styles/chat.css';
 import './styles/chat-messages.css';
 import './styles/chat-attachments.css';
+import './styles/chat-theme.css';
 import { initLiquidGlass } from './liquid-glass.js';
 
 // 应用自定义背景

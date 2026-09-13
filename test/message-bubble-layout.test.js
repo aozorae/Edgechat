@@ -39,7 +39,7 @@ test("短文本消息为右下角时间戳预留末行空间", () => {
 	);
 
 	const bubble = getStyleRule(".message-bubble");
-	assert.match(bubble, /padding:\s*6px 10px 7px;/);
+	assert.match(bubble, /padding:\s*10px 12px 8px;/);
 
 	const attachmentBubble = getStyleRule(".message-bubble--with-attachment");
 	assert.match(attachmentBubble, /padding-bottom:\s*20px;/);
@@ -63,7 +63,7 @@ test("非本人消息在气泡前显示圆形发送者头像", () => {
 
 	const row = getStyleRule(".message-row");
 	assert.match(row, /align-items:\s*flex-end;/);
-	assert.match(row, /gap:\s*8px;/);
+	assert.match(row, /gap:\s*10px;/);
 
 	const avatar = getStyleRule(".message-avatar");
 	assert.match(avatar, /width:\s*34px;/);

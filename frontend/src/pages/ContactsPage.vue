@@ -72,16 +72,16 @@ onBeforeUnmount(dispose);
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  background: #ffffff;
-  color: #111b21;
+  background: var(--chat-paper);
+  color: var(--chat-ink);
 }
 
 .contacts-page__header {
   display: grid;
-  gap: 16px;
-  padding: 24px clamp(20px, 5vw, 64px) 18px;
-  border-bottom: 1px solid #e9edef;
-  background: #ffffff;
+  gap: 20px;
+  padding: 28px clamp(20px, 5vw, 64px) 24px;
+  border-bottom: 1px solid var(--chat-line);
+  background: var(--chat-paper);
 }
 
 .contacts-page__title-row { display: flex; align-items: center; gap: 8px; }
@@ -97,7 +97,7 @@ onBeforeUnmount(dispose);
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: #54656f;
+  color: var(--chat-muted);
 }
 
 .contacts-page__search {
@@ -107,14 +107,14 @@ onBeforeUnmount(dispose);
   height: 44px;
   gap: 10px;
   padding: 0 14px;
-  border: 1px solid #d8dee2;
-  border-radius: 8px;
-  background: #f7f9fa;
-  color: #667781;
+  border: 1px solid var(--chat-line);
+  border-radius: 22px;
+  background: var(--chat-hover);
+  color: var(--chat-muted);
 }
 
-.contacts-page__search:focus-within { border-color: #008069; box-shadow: 0 0 0 2px rgba(0, 128, 105, 0.14); }
-.contacts-page__search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #111b21; font: inherit; letter-spacing: 0; }
+.contacts-page__search:focus-within { border-color: var(--chat-accent); box-shadow: 0 0 0 2px rgba(0, 128, 105, 0.14); }
+.contacts-page__search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--chat-ink); font: inherit; letter-spacing: 0; }
 
 .contacts-page__body {
   width: min(100%, 760px);
@@ -126,26 +126,27 @@ onBeforeUnmount(dispose);
 }
 
 .contacts-page__list { margin: 0; padding: 0; list-style: none; }
-.contacts-page__list li + li { border-top: 1px solid #f0f2f5; }
+.contacts-page__list li + li { border-top: 1px solid var(--chat-hover); }
 
 .contacts-page__row {
   display: flex;
   width: 100%;
-  min-height: 68px;
+  min-height: 80px;
   align-items: center;
   gap: 14px;
   padding: 10px 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 12px;
   background: transparent;
-  color: #111b21;
+  color: var(--chat-ink);
   cursor: pointer;
   text-align: left;
   touch-action: manipulation;
 }
 
-.contacts-page__row:hover { background: #f7f9fa; }
-.contacts-page__row:focus-visible, .contacts-page__menu:focus-visible { outline: 2px solid #008069; outline-offset: 2px; }
+.contacts-page__row:hover { background: var(--chat-hover); }
+.contacts-page__row:active { background: var(--chat-selected); }
+.contacts-page__row:focus-visible, .contacts-page__menu:focus-visible { outline: 2px solid var(--chat-accent); outline-offset: 2px; }
 .contacts-page__row > span { min-width: 0; overflow: hidden; font-size: 15px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 .contacts-page__row .ui-avatar { width: 42px; height: 42px; border-radius: 50%; box-shadow: none; }
 
@@ -156,12 +157,12 @@ onBeforeUnmount(dispose);
   align-content: center;
   gap: 12px;
   padding: 24px;
-  color: #667781;
+  color: var(--chat-muted);
   text-align: center;
 }
 
 .contacts-page__state p { margin: 0; }
-.contacts-page__spinner { width: 26px; height: 26px; border: 2px solid #d8dee2; border-top-color: #008069; border-radius: 50%; animation: contacts-spin 700ms linear infinite; }
+.contacts-page__spinner { width: 26px; height: 26px; border: 2px solid var(--chat-line); border-top-color: var(--chat-accent); border-radius: 50%; animation: contacts-spin 700ms linear infinite; }
 @keyframes contacts-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 960px) {

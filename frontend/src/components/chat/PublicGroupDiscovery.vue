@@ -53,8 +53,8 @@ const expanded = ref(true);
   flex: 0 0 auto;
   flex-direction: column;
   max-height: min(42%, 320px);
-  border-top: 1px solid #e9edef;
-  background: #ffffff;
+  border-top: 1px solid var(--chat-line);
+  background: var(--chat-paper);
 }
 
 .public-group-discovery__toggle {
@@ -64,10 +64,10 @@ const expanded = ref(true);
   gap: 8px;
   width: 100%;
   min-height: 44px;
-  padding: 10px 16px;
+  padding: 12px 24px;
   border: 0;
-  background: #f7f9fa;
-  color: #54656f;
+  background: var(--chat-paper);
+  color: var(--chat-muted);
   font-size: 13px;
   font-weight: 600;
   text-align: left;
@@ -75,12 +75,12 @@ const expanded = ref(true);
 }
 
 .public-group-discovery__toggle:hover {
-  background: #f0f2f5;
+  background: var(--chat-hover);
 }
 
 .public-group-discovery__count {
   min-width: 20px;
-  color: #8696a0;
+  color: var(--chat-subtle);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -106,13 +106,13 @@ const expanded = ref(true);
   align-items: center;
   gap: 12px;
   width: calc(100% - 16px);
-  min-height: 60px;
+  min-height: 72px;
   margin: 2px 8px;
   padding: 9px 16px;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #111b21;
+  color: var(--chat-ink);
   text-align: left;
   cursor: pointer;
   touch-action: manipulation;
@@ -120,7 +120,7 @@ const expanded = ref(true);
 }
 
 .public-group-discovery__item:hover {
-  background: #f5f6f6;
+  background: var(--chat-hover);
 }
 
 .public-group-discovery__identity {
@@ -142,12 +142,12 @@ const expanded = ref(true);
 }
 
 .public-group-discovery__identity small {
-  color: #667781;
+  color: var(--chat-muted);
   font-size: 13px;
 }
 
 .public-group-discovery button:focus-visible {
-  outline: 2px solid #008069;
+  outline: 2px solid var(--chat-accent);
   outline-offset: -2px;
 }
 
@@ -172,7 +172,7 @@ const expanded = ref(true);
   }
 
   .public-group-discovery__item + .public-group-discovery__item {
-    border-top: 1px solid #f0f2f5;
+    border-top: 1px solid var(--chat-hover);
   }
 }
 

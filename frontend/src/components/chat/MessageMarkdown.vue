@@ -31,9 +31,9 @@ function stopLinkGesture(event: Event) {
 <style scoped>
 .message-markdown {
 	min-width: 0;
-	color: #111b21;
-	font-size: 14.5px;
-	line-height: 1.45;
+	color: var(--chat-ink);
+	font-size: 15px;
+	line-height: 1.6;
 	overflow-wrap: anywhere;
 }
 

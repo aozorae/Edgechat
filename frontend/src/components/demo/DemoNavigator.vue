@@ -141,7 +141,7 @@ function resetDemo() {
   /* 聊天页出现置顶条时把演示导航移到输入区上方，避免遮挡真实功能文案。 */
   body:has(.pinned-message-bar) .demo-navigator:not(.demo-navigator--admin) {
     top: auto;
-    bottom: calc(76px + env(safe-area-inset-bottom));
+    bottom: calc(116px + env(safe-area-inset-bottom));
   }
 
 	/* 窄屏演示导航悬浮在输入区上方，因此给消息流留出同等空间，保证最新回复不会被遮住。 */
@@ -151,6 +151,13 @@ function resetDemo() {
 
   body:has(.contacts-page) .contacts-page__body {
     padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  /* 成员管理使用整屏覆盖层，演示导航不能浮在其上方抢占触控区域。 */
+  body:has(.room-management-layer) .demo-navigator,
+  body:has(.composer-rich-editor) .demo-navigator,
+  body:has(.composer-reply) .demo-navigator {
+    display: none;
   }
 }
 </style>

@@ -558,10 +558,10 @@ onBeforeUnmount(() => {
 	flex-shrink: 0;
 	min-width: 0;
 	margin: auto 0 0;
-	padding: 10px 16px;
-	border-top: 1px solid #e9edef;
+	padding: 16px 24px 20px;
+	border-top: 1px solid var(--chat-line);
 	border-radius: 0;
-	background: #f0f2f5;
+	background: var(--chat-canvas);
 }
 
 .composer-attachment {
@@ -571,7 +571,7 @@ onBeforeUnmount(() => {
 
 .composer-reply {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 32px;
+	grid-template-columns: minmax(0, 1fr) 44px;
 	align-items: center;
 	gap: 8px;
 	margin-bottom: 8px;
@@ -581,13 +581,13 @@ onBeforeUnmount(() => {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 32px;
-	height: 32px;
+	width: 44px;
+	height: 44px;
 	padding: 0;
 	border: 0;
 	border-radius: 50%;
 	background: transparent;
-	color: #667781;
+	color: var(--chat-muted);
 	cursor: pointer;
 }
 
@@ -598,7 +598,7 @@ onBeforeUnmount(() => {
 
 .composer-error {
 	margin-bottom: 8px;
-	color: #dc2626;
+	color: var(--chat-danger);
 	font-size: 12px;
 	text-align: center;
 }
@@ -610,21 +610,21 @@ onBeforeUnmount(() => {
 	gap: 8px;
 	min-height: 28px;
 	margin-bottom: 8px;
-	color: #54656f;
+	color: var(--chat-muted);
 	font-size: 12px;
 }
 
 .composer-editor-status--error {
-	color: #c62828;
+	color: var(--chat-danger);
 }
 
 .composer-editor-status button {
-	min-height: 28px;
+	min-height: 44px;
 	padding: 2px 8px;
 	border: 0;
 	border-radius: 4px;
 	background: rgba(0, 128, 105, 0.1);
-	color: #00735f;
+	color: var(--chat-accent);
 	font: inherit;
 	font-weight: 600;
 	cursor: pointer;
@@ -649,7 +649,7 @@ onBeforeUnmount(() => {
 	justify-content: space-between;
 	gap: 8px;
 	margin-bottom: 8px;
-	color: #54656f;
+	color: var(--chat-muted);
 	font-size: 14px;
 }
 
@@ -662,9 +662,9 @@ onBeforeUnmount(() => {
 	max-height: 280px;
 	padding: 6px;
 	overflow-y: auto;
-	border: 1px solid #dfe5e2;
+	border: 1px solid var(--chat-line);
 	border-radius: 8px;
-	background: #ffffff;
+	background: var(--chat-paper);
 	box-shadow: 0 10px 28px rgba(17, 27, 33, 0.14);
 }
 
@@ -700,13 +700,13 @@ onBeforeUnmount(() => {
 }
 
 .mention-option__label strong {
-	color: #111b21;
+	color: var(--chat-ink);
 	font-size: 14px;
 	font-weight: 600;
 }
 
 .mention-option__label small {
-	color: #667781;
+	color: var(--chat-muted);
 	font-size: 12px;
 }
 
@@ -715,12 +715,26 @@ onBeforeUnmount(() => {
 	align-items: flex-end;
 	gap: 8px;
 	min-width: 0;
+	padding: 8px;
+	border: 1px solid var(--chat-line);
+	border-radius: 24px;
+	background: var(--chat-paper);
+	box-shadow: var(--chat-shadow);
+}
+
+/* 整体焦点边框让输入位置清楚可见，不改变面板大小。 */
+.composer-row:focus-within {
+	border-color: var(--chat-accent);
 }
 
 .composer-rich-editor {
 	display: grid;
 	gap: 8px;
 	min-width: 0;
+	padding: 8px;
+	border: 1px solid var(--chat-line);
+	border-radius: 16px;
+	background: var(--chat-paper);
 }
 
 .composer-editor-initializing {
@@ -729,7 +743,7 @@ onBeforeUnmount(() => {
 	justify-content: center;
 	gap: 7px;
 	min-height: 32px;
-	color: #54656f;
+	color: var(--chat-muted);
 	font-size: 12px;
 }
 
@@ -755,7 +769,7 @@ onBeforeUnmount(() => {
 
 .composer-recording__cancel {
 	grid-row: 1 / 3;
-	color: #d93025;
+	color: var(--chat-danger);
 }
 
 .composer-recording__status {
@@ -763,7 +777,7 @@ onBeforeUnmount(() => {
 	align-items: center;
 	gap: 6px;
 	min-width: 0;
-	color: #54656f;
+	color: var(--chat-muted);
 	font-size: 12px;
 }
 
@@ -776,13 +790,13 @@ onBeforeUnmount(() => {
 	width: 8px;
 	height: 8px;
 	border-radius: 50%;
-	background: #d93025;
+	background: var(--chat-danger);
 	animation: recording-pulse 1.2s ease-in-out infinite;
 }
 
 .composer-recording__time {
 	min-width: 38px;
-	color: #111b21;
+	color: var(--chat-ink);
 	font-size: 14px;
 	font-variant-numeric: tabular-nums;
 }
@@ -802,11 +816,11 @@ onBeforeUnmount(() => {
 	min-width: 2px;
 	max-width: 4px;
 	border-radius: 2px;
-	background: #25a36f;
+	background: var(--chat-accent);
 }
 
 .composer-voice {
-	color: #008069;
+	color: var(--chat-accent);
 }
 
 @keyframes recording-pulse {
@@ -842,18 +856,18 @@ onBeforeUnmount(() => {
 }
 
 .composer-btn {
-	color: #54656f;
+	color: var(--chat-muted);
 	transition: background 150ms, color 150ms;
 }
 
 .composer-btn--active {
 	background: rgba(0, 128, 105, 0.1);
-	color: #008069;
+	color: var(--chat-accent);
 }
 
 .composer-btn:hover:not(:disabled) {
 	background: rgba(0, 0, 0, 0.05);
-	color: #111b21;
+	color: var(--chat-ink);
 }
 
 .composer-send {
@@ -861,9 +875,9 @@ onBeforeUnmount(() => {
 	min-width: 72px;
 	gap: 6px;
 	padding: 0 12px;
-	border-radius: 12px;
-	background: #008069;
-	color: #ffffff;
+	border-radius: 22px;
+	background: var(--chat-accent);
+	color: var(--chat-paper);
 	font: inherit;
 	font-size: 14px;
 	font-weight: 600;
@@ -872,7 +886,7 @@ onBeforeUnmount(() => {
 }
 
 .composer-send:hover:not(:disabled) {
-	background: #006b58;
+	background: var(--chat-accent-hover);
 }
 
 .composer-btn:active:not(:disabled) {
@@ -880,13 +894,16 @@ onBeforeUnmount(() => {
 }
 
 .composer-send:active:not(:disabled) {
-	background: #005846;
+	background: var(--chat-accent-pressed);
 }
 
 .composer-btn:focus-visible,
+.composer-reply__cancel:focus-visible,
+.composer-editor-status button:focus-visible,
+.mention-option:focus-visible,
 .composer-send:focus-visible,
 .composer-settings:focus-visible {
-	outline: 2px solid #008069;
+	outline: 2px solid var(--chat-accent);
 	outline-offset: 2px;
 }
 
@@ -897,8 +914,8 @@ onBeforeUnmount(() => {
 
 .composer-send:disabled {
 	cursor: not-allowed;
-	background: #d9e2de;
-	color: #60716a;
+	background: var(--chat-disabled);
+	color: var(--chat-muted);
 }
 
 .composer-input {
@@ -910,14 +927,15 @@ onBeforeUnmount(() => {
 :deep(.composer-input.ui-textarea) {
 	width: 100%;
 	min-width: 0;
-	min-height: 40px;
-	padding: 10px 16px;
+	min-height: 44px;
+	padding: 11px 4px;
 	border: none;
 	border-radius: 8px;
-	background: #ffffff;
+	background: var(--chat-paper);
 	box-shadow: none;
-	color: #111b21;
-	font-size: 15px;
+	color: var(--chat-ink);
+	font-size: 16px;
+	line-height: 1.4;
 	resize: none;
 }
 
@@ -929,7 +947,7 @@ onBeforeUnmount(() => {
 
 /* biome-ignore lint/correctness/noUnknownPseudoClass: Vue deep selector */
 :deep(.composer-input.ui-textarea::placeholder) {
-	color: #8696a0;
+	color: var(--chat-subtle);
 }
 
 @media (max-width: 960px) {
@@ -946,6 +964,8 @@ onBeforeUnmount(() => {
 
 		.composer-row {
 			gap: 4px;
+			padding: 4px;
+			border-radius: 20px;
 		}
 
 	.composer-rich-editor__actions {
@@ -964,9 +984,23 @@ onBeforeUnmount(() => {
 	/* biome-ignore lint/correctness/noUnknownPseudoClass: Vue deep selector */
 	:deep(.composer-input.ui-textarea) {
 		min-height: 44px;
-		padding: 11px 12px;
+		padding: 11px 4px;
 		font-size: 16px;
 	}
+}
+
+@media (max-width: 480px) {
+	/* 窄屏输入单独占一行，防止四个工具按钮把 320px 的文字区挤到不可用。 */
+	.composer-row {
+		display: grid;
+		grid-template-columns: 44px 44px minmax(0, 1fr) auto;
+		gap: 4px;
+	}
+	.composer-input { grid-column: 1 / -1; grid-row: 1; }
+	.composer-row .composer-voice { justify-self: end; }
+	/* biome-ignore lint/correctness/noUnknownPseudoClass: Vue deep selector */
+	:deep(.composer-input.ui-textarea) { padding: 11px 12px; }
+	.mention-menu { left: 8px; right: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

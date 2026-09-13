@@ -23,6 +23,10 @@ const messageComposer = readFileSync(
 	new URL("../frontend/src/components/chat/MessageComposer.vue", import.meta.url),
 	"utf8",
 ).replaceAll("\r\n", "\n");
+const demoNavigator = readFileSync(
+	new URL("../frontend/src/components/demo/DemoNavigator.vue", import.meta.url),
+	"utf8",
+).replaceAll("\r\n", "\n");
 
 function getStyleRule(source, selector) {
 	const marker = `${selector} {`;
@@ -82,6 +86,20 @@ test("移动端主要操作保留四十四像素触控区域且文字发送按�
 	assert.match(messageComposer, /font-size:\s*16px;/);
 });
 
+test("窄屏演示导航避开输入区和聊天覆盖层", () => {
+	assert.match(
+		demoNavigator,
+		/bottom:\s*calc\(116px \+ env\(safe-area-inset-bottom\)\);/,
+	);
+	for (const selector of [
+		"body:has(.room-management-layer) .demo-navigator",
+		"body:has(.composer-rich-editor) .demo-navigator",
+		"body:has(.composer-reply) .demo-navigator",
+	]) {
+		assert.ok(demoNavigator.includes(selector), `演示导航缺少避让规则：${selector}`);
+	}
+});
+
 test("聊天侧栏跟随全屏根节点且不污染后台根节点", () => {
 	for (const selector of [
 		".left-sidebar",
@@ -98,7 +116,7 @@ test("聊天侧栏跟随全屏根节点且不污染后台根节点", () => {
 		assert.match(chatPage, /class="right-sidebar-action right-sidebar-action--admin tooltip"/);
 		assert.match(chatPage, /<span class="right-sidebar-action__label">\{\{ t\('nav\.admin'\) \}\}<\/span>/);
 	assert.match(chatPage, /\.right-sidebar-action--admin\s*{[^}]*flex-direction:\s*column;/s);
-	assert.match(chatPage, /\.right-sidebar-action__label\s*{[^}]*font-size:\s*10px;/s);
+		assert.match(chatPage, /\.right-sidebar-action__label\s*{[^}]*font-size:\s*11px;/s);
 });
 
 	test("GitHub 仓库入口位于添加人员左侧并复用相同按钮尺寸", () => {
@@ -110,9 +128,9 @@ test("聊天侧栏跟随全屏根节点且不污染后台根节点", () => {
 	assert.match(chatPage, /rel="noopener noreferrer"/);
 
 	const headerAction = getStyleRule(chatPage, ".header-action");
-	assert.match(headerAction, /flex:\s*0 0 36px;/);
-	assert.match(headerAction, /width:\s*36px;/);
-		assert.match(headerAction, /height:\s*36px;/);
+		assert.match(headerAction, /flex:\s*0 0 var\(--chat-control\);/);
+		assert.match(headerAction, /width:\s*var\(--chat-control\);/);
+		assert.match(headerAction, /height:\s*var\(--chat-control\);/);
 	});
 
 	test("语言切换入口位于聊天页右上区域且移动端保持可达", () => {
