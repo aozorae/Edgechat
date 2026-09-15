@@ -42,7 +42,12 @@ jobs:
           distribution: temurin
           java-version: "21"
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          # Google no longer serves the legacy `tools` package, and setup-android
+          # still defaults to `tools platform-tools`. Pin the packages we need.
+          cmdline-tools-version: "12266719"
+          packages: "platform-tools"
       - name: Install Android SDK 36
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - name: Validate Gradle wrappers
