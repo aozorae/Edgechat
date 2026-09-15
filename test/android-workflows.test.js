@@ -4,6 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8").replaceAll("\r\n", "\n");
 const ci = read("../.github/workflows/android-ci.yml");
+const capacitorCi = read("../.github/workflows/capacitor-android-ci.yml");
 const release = read("../.github/workflows/android-release.yml");
 const worker = read("../.github/workflows/deploy-worker.yml");
 const demo = read("../.github/workflows/deploy-demo.yml");
@@ -14,6 +15,15 @@ test("Android CI validates the wrapper and builds a tested debug APK", () => {
 	assert.match(ci, /assembleDebugAndroidTest/);
 	assert.match(ci, /android\/app\/build\/outputs\/apk\/debug\/app-debug\.apk/);
 	assert.match(ci, /docs\/api\/\*\*/);
+});
+
+test("Android SDK setup installs packages Google still serves", () => {
+	for (const workflow of [capacitorCi, release]) {
+		assert.match(workflow, /android-actions\/setup-android@v4/);
+		assert.match(workflow, /packages: "platform-tools"/);
+		assert.doesNotMatch(workflow, /android-actions\/setup-android@v3/);
+		assert.doesNotMatch(workflow, /packages: "tools /);
+	}
 });
 
 test("Android release signs and publishes the primary Capacitor client", () => {
