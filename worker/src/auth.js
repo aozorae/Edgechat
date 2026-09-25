@@ -139,3 +139,19 @@ export async function deleteSession(env, token) {
   }
   await env.SESSIONS.delete(token);
 }
+
+const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 10;
+const LOGIN_RATE_LIMIT_WINDOW_SECONDS = 5 * 60;
+
+// 基于 KV 的登录节流：同一 IP 在窗口期内的失败/尝试次数超限后拒绝，缓解撞库攻击。
+export async function consumeLoginRateLimit(env, identifier) {
+  const key = `login_rl:${identifier || 'unknown'}`;
+  const attempts = Number(await env.SESSIONS.get(key)) || 0;
+  if (attempts >= LOGIN_RATE_LIMIT_MAX_ATTEMPTS) {
+    return false;
+  }
+  await env.SESSIONS.put(key, String(attempts + 1), {
+    expirationTtl: LOGIN_RATE_LIMIT_WINDOW_SECONDS
+  });
+  return true;
+}

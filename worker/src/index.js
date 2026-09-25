@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import {
+  consumeLoginRateLimit,
   createSession,
   deleteSession,
   hashPassword,
@@ -140,6 +141,12 @@ app.post('/api/register-links/:token/register', async (c) => {
 });
 
 app.post('/api/auth/login', async (c) => {
+  const clientIp = c.req.header('CF-Connecting-IP') || 'unknown';
+  const withinLimit = await consumeLoginRateLimit(c.env, clientIp);
+  if (!withinLimit) {
+    return errorResponse('尝试次数过多，请稍后再试', 429);
+  }
+
   const payload = await parseJsonRequest(c.req.raw);
   const username = String(payload.username || '').trim();
   const password = String(payload.password || '');
