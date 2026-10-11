@@ -10,10 +10,10 @@
 }
 
 .admin-panel__header {
-  min-height: 46px;
+  min-height: 60px;
   display: flex;
   align-items: center;
-  padding: var(--admin-space-xs) var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-md);
   border-block-end: 1px solid var(--admin-border);
 }
 
@@ -34,18 +34,18 @@
 .admin-panel__header h2 {
   color: var(--admin-text);
   font-size: 0.98rem;
-  font-weight: 750;
+  font-weight: 650;
 }
 
 .admin-panel__header p {
   margin-block-start: var(--admin-space-3xs);
   color: var(--admin-muted);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
 }
 
 .admin-icon-tile {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
@@ -65,20 +65,16 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-sm);
+  gap: var(--admin-space-md);
 }
 
 .admin-page .admin-section__header {
   min-width: 0;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--admin-space-sm);
-  padding: var(--admin-space-sm) var(--admin-space-md);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-panel);
-  background: var(--admin-panel);
-  box-shadow: var(--admin-shadow);
+  padding: var(--admin-space-2xs) 0;
 }
 
 .admin-page .admin-section__heading {
@@ -90,8 +86,8 @@
   min-width: 0;
   margin: 0;
   color: var(--admin-text);
-  font-size: 1.05rem;
-  font-weight: 750;
+  font-size: 1.5rem;
+  font-weight: 650;
   letter-spacing: 0;
   line-height: 1.3;
   overflow-wrap: anywhere;
@@ -99,9 +95,9 @@
 
 .admin-page .admin-section__heading p {
   max-width: 70ch;
-  margin: var(--admin-space-3xs) 0 0;
+  margin: var(--admin-space-2xs) 0 0;
   color: var(--admin-muted);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   line-height: 1.55;
 }
 
@@ -144,11 +140,12 @@
   color: var(--admin-text);
   font-size: 1.55rem;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-page .admin-metric-card span {
   color: var(--admin-muted);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
 }
 
 .admin-page .panel.ui-surface,
@@ -185,7 +182,8 @@
 @media (max-width: 40rem) {
   .admin-page .admin-section__header {
     flex-direction: column;
-    padding: var(--admin-space-sm);
+    align-items: stretch;
+    padding: var(--admin-space-2xs) 0;
   }
 
   .admin-page .admin-section__header > .ui-button {

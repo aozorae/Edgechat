@@ -7,6 +7,7 @@ import '../styles/admin.css';
 import AdminSidebar from '../components/admin/AdminSidebar.vue';
 import AdminTopbar from '../components/admin/AdminTopbar.vue';
 import { useAdminAnchorScroll } from '../composables/useAdminAnchorScroll.js';
+import { t } from '../i18n.js';
 
 useAdminAnchorScroll();
 const route = useRoute();
@@ -31,11 +32,14 @@ onUnmounted(() => {
 
 <template>
   <div class="admin-page">
+    <a class="admin-skip-link" href="#admin-main">{{ t('admin.skipToContent') }}</a>
     <AdminSidebar />
     <section class="admin-workspace">
       <AdminTopbar />
-      <main class="admin-content">
-        <RouterView :key="authorizationKey" />
+      <main id="admin-main" class="admin-content" tabindex="-1">
+        <div class="admin-content__inner">
+          <RouterView :key="authorizationKey" />
+        </div>
       </main>
     </section>
   </div>

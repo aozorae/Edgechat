@@ -3,6 +3,7 @@
   overflow: auto;
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-control);
+  background: var(--admin-panel);
 }
 
 .admin-page .list-table {
@@ -10,7 +11,9 @@
   min-width: 40rem;
   border-collapse: collapse;
   color: var(--admin-text);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-page .list-table th,
@@ -24,8 +27,8 @@
 .admin-page .list-table th {
   background: var(--admin-subtle);
   color: var(--admin-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -39,4 +42,63 @@
 
 .admin-page .list-table td strong {
   color: var(--admin-text);
+}
+
+/* 行操作保持常显；危险操作用文字与浅底区分，不让整张表充满主操作色。 */
+.admin-page .list-table .ui-button--destructive {
+  border-color: var(--admin-border);
+  background: var(--admin-panel);
+  color: var(--admin-danger);
+}
+
+.admin-page .list-table .ui-button--destructive:hover:not(:disabled),
+.admin-page .list-table .ui-button--destructive:active:not(:disabled) {
+  border-color: var(--admin-danger);
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+}
+
+.admin-page .list-table tbody tr:focus-within {
+  background: var(--admin-subtle);
+}
+
+.admin-table-toolbar,
+.admin-table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+}
+
+.admin-table-footer {
+  padding-block-start: var(--admin-space-sm);
+  border-block-start: 1px solid var(--admin-border);
+}
+
+.admin-table-footer p { margin: 0; }
+
+.admin-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-2xs);
+  padding: var(--admin-space-3xs) var(--admin-space-2xs);
+  border-radius: var(--admin-radius-control);
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+  font-size: 0.75rem;
+}
+
+.admin-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.admin-status--disabled {
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
 }

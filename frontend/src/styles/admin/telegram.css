@@ -74,6 +74,8 @@
 }
 
 .telegram-switch {
+  /* 隐藏的原生输入仍参与键盘操作，将其定位在开关内，避免越过横向表格的裁切边界。 */
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--admin-space-2xs);

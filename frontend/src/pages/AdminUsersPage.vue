@@ -1,6 +1,6 @@
 <script setup>
-import { defineAsyncComponent, onMounted, ref } from 'vue';
-import { UserRoundSearch } from '@lucide/vue';
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
+import { Search, UserRoundSearch } from '@lucide/vue';
 import api from '../api.js';
 import UserBanDialog from '../components/admin/UserBanDialog.vue';
 import UiButton from '../components/ui/Button.vue';
@@ -10,10 +10,13 @@ import { can } from '../authorization.ts';
 import store from '../store.js';
 import UserGroupAssignment from '../components/admin/UserGroupAssignment.vue';
 import { useUserGroupOptions } from '../composables/useUserGroupOptions.ts';
+import { filterAdminUsers } from '../admin/user-list.ts';
 
 const loading = ref(false);
 const error = ref('');
 const users = ref([]);
+const query = ref('');
+const visibleUsers = computed(() => filterAdminUsers(users.value, query.value));
 const banDialogUser = ref(null);
 const banSaving = ref(false);
 const banError = ref('');
@@ -28,7 +31,11 @@ async function editProfile(user) {
   if (!displayName?.trim()) return;
   try { await api.updateUser(user.id, { displayName: displayName.trim() }); await loadUsers(); } catch (e) { error.value = e.message; }
 }
-async function userPage(direction) { offset.value += direction * 100; await loadUsers(); }
+async function userPage(direction) {
+  offset.value += direction * 100;
+  query.value = '';
+  await loadUsers();
+}
 
 function openDetails(user) {
   detailsOpened.value = true;
@@ -115,7 +122,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="admin-section">
+  <div class="admin-section admin-users">
     <header class="admin-section__header">
       <div class="admin-section__heading">
         <h2>{{ t('users.title') }}</h2>
@@ -127,37 +134,44 @@ onMounted(async () => {
     </header>
 
     <div class="admin-section__body">
-      <p v-if="error || rolesError" class="error-text">{{ error || rolesError }}</p>
+      <p v-if="error || rolesError" class="error-text" role="alert">{{ error || rolesError }}</p>
 
       <UiSurface class="panel panel--table">
-        <h3 class="panel-title">{{ t('users.list') }}</h3>
-        <div class="admin-table-wrap">
-          <table class="list-table">
+        <div class="admin-table-toolbar">
+          <h3 id="admin-users-title" class="panel-title">{{ t('users.list') }}</h3>
+          <label class="admin-user-search">
+            <Search :size="17" aria-hidden="true" />
+            <span class="sr-only">{{ t('users.searchPage') }}</span>
+            <input v-model="query" type="search" :placeholder="t('users.searchPage')" />
+          </label>
+        </div>
+        <div class="admin-table-wrap" :aria-busy="loading">
+          <table class="list-table" aria-labelledby="admin-users-title">
             <thead>
               <tr>
-                <th>{{ t('users.columns.user') }}</th>
-                <th>{{ t('users.columns.status') }}</th>
-                <th>{{ t('users.columns.createdAt') }}</th>
-                <th>{{ t('users.columns.actions') }}</th>
+                <th scope="col">{{ t('users.columns.user') }}</th>
+                <th scope="col">{{ t('users.columns.status') }}</th>
+                <th scope="col">{{ t('users.columns.createdAt') }}</th>
+                <th scope="col">{{ t('users.columns.actions') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="loading && !users.length">
                 <td colspan="4" class="muted">{{ t('users.loading') }}</td>
               </tr>
-              <tr v-else-if="!users.length">
-                <td colspan="4" class="muted">{{ t('users.empty') }}</td>
+              <tr v-else-if="!visibleUsers.length">
+                <td colspan="4" class="admin-users-empty muted">{{ query.trim() ? t('users.noMatches') : t('users.empty') }}</td>
               </tr>
-              <tr v-for="user in users" :key="user.id">
-                <td>
+              <tr v-for="user in visibleUsers" :key="user.id">
+                <td class="admin-user-identity">
                   <strong>{{ user.displayName }}</strong>
                   <div class="muted">@{{ user.username }}</div>
                   <div class="muted">{{ t(user.isSuperAdmin ? 'rbac.superAdmin' : user.canAccessAdmin ? 'rbac.subAdmin' : 'rbac.ordinary') }} · {{ user.role?.id === 1 ? t('rbac.ordinary') : user.role?.name }}<span v-if="user.role && !user.role.enabled"> · {{ t('rbac.disabled') }}</span><span v-if="user.managementProtected"> · {{ t('rbac.protected') }}</span></div>
                   <UserGroupAssignment v-if="store.session?.isSuperAdmin" :key="`${user.id}:${user.authzVersion}`" :user="user" :roles="roles" :has-more-roles="hasMore" :roles-loading="rolesLoading" @more-roles="loadMore" @changed="loadUsers" />
                 </td>
-                <td>{{ userStatus(user) }}</td>
-                <td>{{ formatDateTime(user.createdAt) }}</td>
-                <td>
+                <td :data-label="t('users.columns.status')"><span class="admin-status" :class="{ 'admin-status--disabled': user.isDisabled }">{{ userStatus(user) }}</span></td>
+                <td :data-label="t('users.columns.createdAt')">{{ formatDateTime(user.createdAt) }}</td>
+                <td class="admin-user-actions" :data-label="t('users.columns.actions')">
                   <div class="inline-actions">
                     <UiButton v-if="can('users.ban') && canTarget(user) && user.isDisabled" variant="secondary" size="sm" @click="enableUser(user)">
                       {{ t('users.enable') }}
@@ -177,8 +191,14 @@ onMounted(async () => {
             </tbody>
           </table>
         </div>
+        <footer class="admin-table-footer">
+          <p class="muted" role="status">{{ t('users.pageCount', { shown: visibleUsers.length, total: users.length }) }}</p>
+          <div class="inline-actions">
+            <UiButton variant="secondary" :disabled="loading || offset === 0" @click="userPage(-1)">{{ t('rbac.previous') }}</UiButton>
+            <UiButton variant="secondary" :disabled="loading || users.length < 100" @click="userPage(1)">{{ t('rbac.next') }}</UiButton>
+          </div>
+        </footer>
       </UiSurface>
-      <div class="inline-actions"><UiButton variant="secondary" :disabled="loading || offset === 0" @click="userPage(-1)">{{ t('rbac.previous') }}</UiButton><UiButton variant="secondary" :disabled="loading || users.length < 100" @click="userPage(1)">{{ t('rbac.next') }}</UiButton></div>
     </div>
 
     <UserBanDialog
@@ -193,6 +213,4 @@ onMounted(async () => {
   </div>
 </template>
 
-<style scoped>
-.user-details-trigger { width: 44px; min-height: 44px; padding: 0; }
-</style>
+<style scoped src="../styles/admin/users.css"></style>

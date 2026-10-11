@@ -54,6 +54,18 @@ test('all three locales stay below the first-screen target and compiled frontend
   assert.ok(analysis.compiled.gzip <= 500_000, `${analysis.compiled.gzip} compiled gzip bytes`);
 });
 
+test('admin first-screen budgets include the shell but not other admin routes or user details', () => {
+  for (const page of ['AdminDashboardPage', 'AdminUsersPage']) {
+    const files = analysis.pageFiles(page, '/src/locales/en-US.js');
+    const modules = analysis.modules(files);
+    assert.ok(modules.some((module) => module.endsWith('/pages/AdminPage.vue')));
+    assert.ok(modules.some((module) => module.endsWith(`/pages/${page}.vue`)));
+    assert.ok([...files].some((file) => /AdminPage.*\.css$/.test(file)));
+    assert.ok(!modules.some((module) => /\/pages\/Admin(?:Rbac|Telegram|Storage|Site)Page\.vue$/.test(module)));
+    assert.ok(!modules.some((module) => /UserDetailsDialog|node_modules\/bowser/.test(module)));
+  }
+});
+
 test('remote font failures cannot reject a lazy route CSS preload', () => {
   for (const file of analysis.files.values()) {
     if (file.type === 'asset' && file.fileName.endsWith('.css')) {

@@ -46,9 +46,12 @@ export function analyzeFrontendBundle(output) {
 
   const localeSources = ['/src/locales/zh-CN.js', '/src/locales/zh-TW.js', '/src/locales/en-US.js'];
   function pageFiles(page, locale) {
-    return closure([entry.fileName, 'index.html', chunkFor(`/src/pages/${page}.vue`), chunkFor(locale)]);
+    const roots = [entry.fileName, 'index.html', chunkFor(`/src/pages/${page}.vue`), chunkFor(locale)];
+    // 后台子路由还会加载外壳；一起计量，防止公共后台样式逃出首屏预算。
+    if (page.startsWith('Admin')) roots.push(chunkFor('/src/pages/AdminPage.vue'));
+    return closure(roots);
   }
-  const pages = Object.fromEntries(['LoginPage', 'ChatPage'].map((page) => [
+  const pages = Object.fromEntries(['LoginPage', 'ChatPage', 'AdminDashboardPage', 'AdminUsersPage'].map((page) => [
     page,
     Object.fromEntries(localeSources.map((locale) => [locale.split('/').at(-1).slice(0, -3), size(pageFiles(page, locale))]))
   ]));

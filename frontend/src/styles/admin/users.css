@@ -1,0 +1,84 @@
+.admin-user-search {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2xs);
+  width: min(100%, 320px);
+  min-height: 40px;
+  padding-inline: var(--admin-space-xs);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-control);
+  background: var(--admin-panel);
+  color: var(--admin-muted);
+}
+
+.admin-user-search:focus-within {
+  outline: 2px solid var(--admin-focus);
+  outline-offset: 1px;
+}
+
+.admin-user-search input {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.admin-user-search input::placeholder { color: var(--admin-muted); }
+.admin-user-search > svg { flex-shrink: 0; }
+.admin-user-identity { min-width: 200px; max-width: 340px; overflow-wrap: anywhere; }
+.admin-user-identity > strong { font-weight: 650; }
+.admin-user-identity > .muted { margin-block-start: var(--admin-space-3xs); }
+.admin-user-actions { min-width: 240px; }
+.user-details-trigger { width: 44px; min-height: 44px; padding: 0; }
+.admin-users-empty { height: 144px; text-align: center; }
+
+@media (max-width: 40rem) {
+  .admin-user-search { width: 100%; min-height: 44px; }
+  .admin-user-search input { font-size: 1rem; }
+
+  /* 小屏按账号分块，而不是让操作按钮藏在横向滚动区域外；保留原生表格语义。 */
+  .admin-users .admin-table-wrap { border: 0; overflow: visible; }
+  .admin-users .list-table { min-width: 0; }
+  .admin-users thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .admin-users tbody,
+  .admin-users tr { display: block; }
+  .admin-users tbody tr {
+    padding: var(--admin-space-sm) 0;
+    border-block-end: 1px solid var(--admin-border);
+  }
+  .admin-users tbody tr:first-child { padding-block-start: 0; }
+  .admin-users tbody tr:last-child { padding-block-end: 0; border: 0; }
+  .admin-users td {
+    display: block;
+    min-width: 0;
+    max-width: none;
+    padding: var(--admin-space-2xs) 0;
+    border: 0;
+  }
+  .admin-users td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-block-end: var(--admin-space-3xs);
+    color: var(--admin-muted);
+    font-size: 0.75rem;
+  }
+  .admin-users .inline-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--admin-space-2xs);
+  }
+  .admin-users .inline-actions .ui-button { width: auto; }
+  .admin-users .admin-table-footer .inline-actions { width: 100%; }
+  .admin-users .admin-table-footer .ui-button { flex: 1; }
+}

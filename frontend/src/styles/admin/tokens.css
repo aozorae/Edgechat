@@ -6,11 +6,12 @@
   --admin-border: #e8ebf0;
   --admin-border-strong: #d8dde4;
   --admin-text: #20232c;
-  --admin-muted: #6f7480;
+  --admin-muted: #626977;
   --admin-faint: #9aa1ad;
   --admin-ink: #0d1731;
   --admin-ink-hover: #18233f;
   --admin-brand: #176bc0;
+  --admin-selected: #edf4fc;
   --admin-green-bg: #f1fdfb;
   --admin-green: #168c87;
   --admin-green-hover: #0e726e;
@@ -23,11 +24,11 @@
   --admin-success-bg: #eefbf3;
   --admin-shadow: 0 1px 2px rgba(13, 23, 49, 0.035);
   --admin-shadow-raised: 0 8px 24px rgba(13, 23, 49, 0.055);
-  --admin-font: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
+  --admin-font: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --admin-font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
-  --admin-sidebar-width: 296px;
+  --admin-sidebar-width: 256px;
   --admin-topbar-height: 64px;
-  --admin-radius-panel: 8px;
+  --admin-radius-panel: 10px;
   --admin-radius-control: 6px;
   --admin-radius-pill: 999px;
   --admin-space-3xs: 4px;
@@ -38,11 +39,6 @@
   --admin-space-lg: 32px;
   --admin-space-xl: 48px;
   --admin-duration: 160ms;
-}
-
-html,
-body {
-  overflow-x: clip;
 }
 
 .admin-page {

@@ -1,5 +1,6 @@
 .admin-topbar {
   min-height: var(--admin-topbar-height);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -20,8 +21,8 @@
 .admin-topbar__title h1 {
   min-width: 0;
   margin: 0;
-  font-size: 1.18rem;
-  font-weight: 750;
+  font-size: 0.9375rem;
+  font-weight: 600;
   letter-spacing: 0;
   line-height: 1.2;
   overflow-wrap: anywhere;
@@ -35,25 +36,26 @@
 }
 
 .admin-topbar__settings {
-  min-height: 42px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--admin-space-xs);
-  padding-inline: var(--admin-space-md);
-  border: 1px solid var(--admin-ink);
+  padding-inline: var(--admin-space-xs);
+  border: 1px solid var(--admin-border-strong);
   border-radius: var(--admin-radius-control);
-  background: var(--admin-ink);
-  color: var(--admin-panel);
-  font-weight: 700;
+  background: var(--admin-panel);
+  color: var(--admin-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
   white-space: nowrap;
   transition: background-color var(--admin-duration), border-color var(--admin-duration);
 }
 
 .admin-topbar__settings:hover,
 .admin-topbar__settings:active {
-  border-color: var(--admin-ink-hover);
-  background: var(--admin-ink-hover);
+  border-color: var(--admin-border-strong);
+  background: var(--admin-active);
 }
 
 .admin-topbar__settings:focus-visible {
@@ -73,8 +75,9 @@
   }
 
   .admin-topbar__settings {
-    min-height: 38px;
-    padding-inline: var(--admin-space-sm);
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
   }
 
   .admin-topbar__settings span {

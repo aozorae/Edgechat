@@ -178,17 +178,40 @@ test('Telegram 互通页由管理员路由保护并统一管理公开与私有�
 test('仪表盘在中等桌面宽度提前重排且快捷入口文字保持完整', () => {
   assert.match(
     dashboardStyles,
-    /@media \(max-width: 96rem\)[\s\S]*\.admin-dashboard__body\s*\{\s*grid-template-columns: minmax\(0, 1fr\);/
+    /@media \(max-width: 64rem\)[\s\S]*\.admin-dashboard__body\s*\{\s*grid-template-columns: minmax\(0, 1fr\);/
   );
   assert.match(
     dashboardStyles,
-    /@media \(max-width: 75rem\)[\s\S]*\.admin-dashboard__metrics,\s*\.admin-quick-grid\s*\{\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/
+    /@media \(max-width: 75rem\)[\s\S]*\.admin-dashboard__metrics\s*\{\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/
   );
   assert.match(dashboardStyles, /\.admin-quick-link__copy strong\s*\{[\s\S]*overflow-wrap: anywhere;/);
   assert.doesNotMatch(
     dashboardStyles,
     /\.admin-quick-link__copy strong\s*\{[\s\S]*?text-overflow: ellipsis;[\s\S]*?\}/
   );
+});
+
+test('轻量后台保留按需加载、可访问导航和按权限展示的设置入口', () => {
+  const topbar = read('../frontend/src/components/admin/AdminTopbar.vue');
+  assert.match(topbar, /v-if="canVisit\('site'\)"/);
+  assert.match(topbar, /:aria-label="t\('admin\.nav\.site'\)"/);
+  assert.match(sidebarSource, /:aria-current="isChildActive\(item, child\) \? 'location'/);
+  assert.match(sidebarSource, /@keydown\.esc="closeMobileNavigation"/);
+  assert.match(sidebarSource, /mobileToggle\.value\?\.focus\(\)/);
+  assert.match(adminPageSource, /id="admin-main"[^>]+tabindex="-1"/);
+  assert.match(adminSidebarStyles, /position: fixed;\s*inset: 60px 0 0;/);
+  assert.doesNotMatch(adminStyles + adminTokens, /@import url|backdrop-filter/);
+});
+
+test('用户列表搜索明确为本页且保留原分页和权限操作', () => {
+  assert.match(usersSource, /filterAdminUsers\(users\.value, query\.value\)/);
+  assert.match(usersSource, /t\('users\.searchPage'\)/);
+  assert.match(usersSource, /users\.length < 100/);
+  assert.match(usersSource, /v-for="user in visibleUsers"/);
+  assert.match(usersSource, /aria-labelledby="admin-users-title"/);
+  assert.match(usersSource, /class="error-text" role="alert"/);
+  assert.match(usersSource, /can\('users\.delete'\) && canTarget\(user\)/);
+  assert.match(dashboardSource, /loading \|\| error \? '—'/);
 });
 
 test('管理员消息正文查看的页面、客户端调用与服务端接口均已下线', () => {

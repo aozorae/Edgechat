@@ -20,7 +20,7 @@ import { formatTime, t } from '../i18n.js';
 import { canVisit, can } from '../authorization.ts';
 
 const router = useRouter();
-const loading = ref(false);
+const loading = ref(true);
 const error = ref('');
 const refreshedAt = ref(null);
 const overview = ref({ site: null, stats: {} });
@@ -83,15 +83,25 @@ onMounted(loadOverview);
 </script>
 
 <template>
-  <div class="admin-dashboard">
-    <section class="admin-dashboard__metrics" :aria-label="t('dashboard.metrics.ariaLabel')">
+  <div class="admin-dashboard admin-section">
+    <header class="admin-section__header">
+      <div class="admin-section__heading">
+        <h2>{{ t('dashboard.systemOverview') }}</h2>
+        <p>{{ t('admin.nav.dashboardDescription') }} · {{ t('dashboard.lastRefreshed', { time: refreshedTime }) }}</p>
+      </div>
+      <button type="button" class="admin-secondary-command" :disabled="loading" @click="loadOverview">
+        <RefreshCw :size="16" aria-hidden="true" :class="{ 'admin-spin': loading }" />
+        {{ loading ? t('common.refreshing') : t('dashboard.refreshData') }}
+      </button>
+    </header>
+    <section class="admin-dashboard__metrics" :aria-label="t('dashboard.metrics.ariaLabel')" :aria-busy="loading">
       <article v-for="metric in metrics" :key="metric.label" class="admin-dashboard-metric">
         <span class="admin-icon-tile admin-icon-tile--neutral">
           <component :is="metric.icon" :size="21" aria-hidden="true" />
         </span>
         <div>
           <span>{{ metric.label }}</span>
-          <strong>{{ loading ? '—' : metric.value }}</strong>
+          <strong>{{ loading || error ? '—' : metric.value }}</strong>
         </div>
       </article>
     </section>
@@ -123,22 +133,11 @@ onMounted(loadOverview);
       <article class="admin-panel admin-status-panel">
         <header class="admin-panel__header admin-panel__header--actions">
           <div>
-            <h2>{{ t('dashboard.systemOverview') }}</h2>
-            <p>{{ t('dashboard.lastRefreshed', { time: refreshedTime }) }}</p>
+            <h2>{{ t('dashboard.site') }}</h2>
           </div>
-          <button
-            type="button"
-            class="admin-icon-button"
-            :disabled="loading"
-            :title="t('dashboard.refreshData')"
-            :aria-label="t('dashboard.refreshData')"
-            @click="loadOverview"
-          >
-            <RefreshCw :size="18" aria-hidden="true" :class="{ 'admin-spin': loading }" />
-          </button>
         </header>
 
-        <div v-if="error" class="admin-dashboard-state admin-dashboard-state--error">
+        <div v-if="error" class="admin-dashboard-state admin-dashboard-state--error" role="alert">
           <Activity :size="28" aria-hidden="true" />
           <strong>{{ t('dashboard.loadFailed') }}</strong>
           <span>{{ error }}</span>

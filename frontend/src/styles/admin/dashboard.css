@@ -1,7 +1,7 @@
 .admin-dashboard {
   min-width: 0;
   display: grid;
-  gap: var(--admin-space-sm);
+  gap: var(--admin-space-md);
 }
 
 .admin-dashboard__metrics {
@@ -12,10 +12,12 @@
 
 .admin-dashboard-metric {
   min-width: 0;
-  min-height: 126px;
+  min-height: 128px;
   display: flex;
-  align-items: center;
-  gap: var(--admin-space-md);
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--admin-space-sm);
   padding: var(--admin-space-md);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-panel);
@@ -26,52 +28,54 @@
 .admin-dashboard-metric > div {
   min-width: 0;
   display: grid;
-  gap: var(--admin-space-3xs);
+  gap: var(--admin-space-sm);
 }
 
 .admin-dashboard-metric span {
   color: var(--admin-muted);
-  font-size: 0.86rem;
+  font-size: 0.8125rem;
 }
 
 .admin-dashboard-metric strong {
   color: var(--admin-text);
-  font-size: 1.75rem;
+  font-size: 2rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
   line-height: 1;
 }
 
 .admin-dashboard__body {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.95fr);
-  gap: var(--admin-space-sm);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: var(--admin-space-md);
+  align-items: start;
 }
 
 .admin-quick-panel,
 .admin-status-panel {
-  min-height: 480px;
+  min-height: 0;
 }
 
 .admin-quick-grid {
-  flex: 1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  padding: var(--admin-space-sm);
-  background: var(--admin-border);
+  grid-template-columns: minmax(0, 1fr);
+  padding: var(--admin-space-2xs);
+  background: var(--admin-panel);
 }
 
 .admin-quick-link {
   min-width: 0;
-  min-height: 176px;
+  min-height: 68px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-rows: auto 1fr;
-  align-items: start;
-  gap: var(--admin-space-sm);
-  padding: var(--admin-space-lg);
+  align-items: center;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
   border: 0;
-  background: var(--admin-subtle);
+  border-radius: var(--admin-radius-control);
+  background: var(--admin-panel);
   color: var(--admin-text);
   text-align: start;
   transition: background-color var(--admin-duration);
@@ -101,21 +105,21 @@
 
 .admin-quick-link__copy {
   min-width: 0;
-  align-self: end;
+  align-self: center;
   display: grid;
   gap: var(--admin-space-3xs);
 }
 
 .admin-quick-link__copy strong {
-  font-size: 0.96rem;
+  font-size: 0.875rem;
+  font-weight: 600;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
 .admin-status-list {
   display: grid;
-  gap: var(--admin-space-xs);
-  padding: var(--admin-space-md);
+  padding: var(--admin-space-2xs) var(--admin-space-md);
 }
 
 .admin-status-list__item {
@@ -123,7 +127,8 @@
   display: flex;
   align-items: center;
   gap: var(--admin-space-sm);
-  padding-block: var(--admin-space-xs);
+  min-height: 84px;
+  padding-block: var(--admin-space-sm);
   border-block-end: 1px solid var(--admin-border);
 }
 
@@ -139,7 +144,7 @@
 
 .admin-status-list__item span {
   color: var(--admin-muted);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
 }
 
 .admin-status-list__item strong {
@@ -149,7 +154,7 @@
 }
 
 .admin-dashboard-state {
-  min-height: 360px;
+  min-height: 280px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -174,7 +179,7 @@
   color: var(--admin-danger);
 }
 
-@media (max-width: 96rem) {
+@media (max-width: 64rem) {
   .admin-dashboard__body {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -186,27 +191,24 @@
 }
 
 @media (max-width: 75rem) {
-  .admin-dashboard__metrics,
-  .admin-quick-grid {
+  .admin-dashboard__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 40rem) {
-  .admin-dashboard__metrics {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .admin-dashboard-metric {
-    min-height: 100px;
+    min-height: 120px;
+    flex-direction: row;
+    padding: var(--admin-space-sm);
   }
 
-  .admin-quick-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .admin-dashboard-metric .admin-icon-tile {
+    display: none;
   }
 
   .admin-quick-link {
-    min-height: 116px;
-    padding: var(--admin-space-md);
+    min-height: 64px;
+    padding: var(--admin-space-xs);
   }
 }

@@ -18,10 +18,36 @@
   min-width: 0;
   min-height: 0;
   flex: 1;
-  padding: var(--admin-space-sm);
+  padding: var(--admin-space-md) var(--admin-space-lg) var(--admin-space-xl);
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
+}
+
+/* 只约束后台阅读宽度；滚动仍由 main 承担，避免表格和弹层多层滚动。 */
+.admin-content__inner {
+  width: 100%;
+  max-width: 1440px;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.admin-skip-link {
+  position: fixed;
+  inset-block-start: var(--admin-space-2xs);
+  inset-inline-start: var(--admin-space-2xs);
+  z-index: 100;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-control);
+  background: var(--admin-ink);
+  color: var(--admin-panel);
+  transform: translateY(-200%);
+}
+
+.admin-skip-link:focus {
+  transform: none;
+  outline: 2px solid var(--admin-focus);
+  outline-offset: 2px;
 }
 
 .admin-content::-webkit-scrollbar,
@@ -41,17 +67,22 @@
 }
 
 @media (max-width: 56rem) {
+  /* 菜单占据移动端工作区时隐藏被覆盖内容，也让键盘跳过不可见控件。 */
+  .admin-sidebar--open + .admin-workspace {
+    visibility: hidden;
+  }
+
   .admin-page {
     flex-direction: column;
   }
 
   .admin-content {
-    padding: var(--admin-space-xs);
+    padding: var(--admin-space-md) var(--admin-space-sm) var(--admin-space-xl);
   }
 }
 
 @media (max-width: 40rem) {
   .admin-content {
-    padding: var(--admin-space-2xs);
+    padding: var(--admin-space-sm) var(--admin-space-xs) var(--admin-space-xl);
   }
 }

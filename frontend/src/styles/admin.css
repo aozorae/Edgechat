@@ -1,6 +1,6 @@
-/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4
- * genre: modern-minimal · macrostructure: Workbench · theme: studied-DNA (Halo admin reference)
- * contrast: pass · tokens: pass · responsive: pass · designed-as-app
+/* Hallmark · pre-emit critique: P4 H5 E4 S4 R5 V4
+ * genre: modern-minimal · macrostructure: Workbench · design-system: design.md · designed-as-app
+ * 保留既有品牌与按需样式边界，以信息层级替代装饰性特效。
  */
 
 @import './admin/tokens.css';

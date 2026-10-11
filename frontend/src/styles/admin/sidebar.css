@@ -1,7 +1,9 @@
 .admin-sidebar {
   width: var(--admin-sidebar-width);
   min-width: var(--admin-sidebar-width);
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 0;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: var(--admin-panel);
@@ -13,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-inline: var(--admin-space-lg);
+  padding-inline: var(--admin-space-md);
 }
 
 .admin-brand {
@@ -22,8 +24,8 @@
   border: 0;
   background: transparent;
   color: var(--admin-brand);
-  font-size: 1.6rem;
-  font-weight: 750;
+  font-size: 1.125rem;
+  font-weight: 700;
   letter-spacing: 0;
   line-height: 1;
   white-space: nowrap;
@@ -38,8 +40,8 @@
 
 .admin-mobile-toggle {
   display: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   padding: 0;
   border: 1px solid var(--admin-border);
@@ -57,14 +59,15 @@
 }
 
 .admin-nav-search {
-  min-height: 46px;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  gap: var(--admin-space-xs);
-  padding-inline: var(--admin-space-sm);
+  gap: var(--admin-space-2xs);
+  padding-inline: var(--admin-space-xs);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-control);
-  background: var(--admin-active);
-  color: var(--admin-faint);
+  background: var(--admin-subtle);
+  color: var(--admin-muted);
 }
 
 .admin-nav-search:focus-within {
@@ -80,10 +83,11 @@
   outline: 0;
   background: transparent;
   color: var(--admin-text);
+  font-size: 0.8125rem;
 }
 
 .admin-nav-search input::placeholder {
-  color: var(--admin-faint);
+  color: var(--admin-muted);
 }
 
 .admin-nav {
@@ -106,7 +110,7 @@
   border-radius: var(--admin-radius-control);
   background: transparent;
   color: var(--admin-text);
-  font-weight: 650;
+  font-weight: 500;
   text-align: start;
   white-space: nowrap;
   transition: background-color var(--admin-duration), color var(--admin-duration);
@@ -114,10 +118,10 @@
 
 .admin-nav-item {
   position: relative;
-  min-height: 42px;
+  min-height: 44px;
   gap: var(--admin-space-xs);
-  padding-inline: var(--admin-space-sm);
-  font-size: 0.92rem;
+  padding-inline: var(--admin-space-xs);
+  font-size: 0.875rem;
 }
 
 .admin-nav-item:hover,
@@ -140,8 +144,9 @@
 }
 
 .admin-nav-item--active {
-  background: var(--admin-active);
-  color: var(--admin-ink);
+  background: var(--admin-selected);
+  color: var(--admin-brand);
+  font-weight: 650;
 }
 
 /* 维护入口排在业务栏目之后并单独分隔；按正常文档流排列，不吸附到侧栏底部。 */
@@ -153,16 +158,16 @@
 }
 
 .admin-nav-item--separated > svg { flex-shrink: 0; }
-.admin-nav-item--separated > span { white-space: normal; line-height: 1.45; }
+.admin-nav-item--separated > span { line-height: 1.45; }
 
 .admin-nav-item--active::before {
   content: '';
   position: absolute;
-  inset-block: 8px;
-  inset-inline-start: calc(var(--admin-space-xs) * -1);
+  inset-block: 12px;
+  inset-inline-start: 0;
   width: 3px;
   border-radius: var(--admin-radius-pill);
-  background: var(--admin-ink);
+  background: var(--admin-brand);
 }
 
 .admin-nav-group__header {
@@ -211,15 +216,15 @@
 }
 
 .admin-nav-subitem {
-  min-height: 34px;
+  min-height: 40px;
   padding-inline: var(--admin-space-xs);
   color: var(--admin-muted);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
 }
 
 .admin-nav-subitem--active {
-  background: var(--admin-active);
-  color: var(--admin-ink);
+  background: var(--admin-selected);
+  color: var(--admin-brand);
 }
 
 .admin-nav-empty {
@@ -275,8 +280,8 @@
 }
 
 .admin-sidebar__shortcuts button {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -296,6 +301,7 @@
   .admin-sidebar {
     width: 100%;
     min-width: 0;
+    height: auto;
     min-height: auto;
     border-inline-end: 0;
     border-block-end: 1px solid var(--admin-border);
@@ -316,7 +322,11 @@
 
   .admin-sidebar__body {
     display: none;
+    position: fixed;
+    inset: 60px 0 0;
+    z-index: 50;
     max-height: calc(100dvh - 60px);
+    background: var(--admin-panel);
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y;
@@ -325,6 +335,14 @@
   .admin-sidebar--open .admin-sidebar__body {
     display: flex;
   }
+
+  .admin-nav-subitem,
+  .admin-nav-search,
+  .admin-sidebar__shortcuts button {
+    min-height: 44px;
+  }
+
+  .admin-nav-search input { font-size: 1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

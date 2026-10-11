@@ -12,6 +12,7 @@ const router = useRouter();
 const { locale, t } = useI18n();
 const query = ref('');
 const mobileOpen = ref(false);
+const mobileToggle = ref(null);
 // 页面导航与菜单展开分开操作；进入栏目也保持收起，避免挤占其它导航入口。
 const openGroups = ref(new Set());
 
@@ -69,21 +70,29 @@ function toggleGroup(groupId) {
   openGroups.value = next;
 }
 
-function navigate(location) {
+function closeMobileNavigation() {
+  if (!mobileOpen.value) return;
   mobileOpen.value = false;
+  // 收起后原导航项会隐藏，把焦点交还始终可见的开关，避免键盘位置丢失。
+  mobileToggle.value?.focus();
+}
+
+function navigate(location) {
+  closeMobileNavigation();
   void router.push(location);
 }
 
 </script>
 
 <template>
-  <aside class="admin-sidebar" :class="{ 'admin-sidebar--open': mobileOpen }">
+  <aside class="admin-sidebar" :class="{ 'admin-sidebar--open': mobileOpen }" @keydown.esc="closeMobileNavigation">
     <div class="admin-sidebar__brand-row">
       <button type="button" class="admin-brand" :aria-label="t('admin.sidebar.openDashboard')" @click="navigate(firstAdminPage())">
         {{ t('admin.sidebar.brand') }}
       </button>
       <button
         type="button"
+        ref="mobileToggle"
         class="admin-mobile-toggle"
         :aria-expanded="mobileOpen"
         aria-controls="admin-sidebar-body"
@@ -116,7 +125,7 @@ function navigate(location) {
             <span>{{ item.label }}</span>
           </button>
 
-          <section v-else class="admin-nav-group">
+          <section v-else class="admin-nav-group" :aria-label="item.label">
             <div class="admin-nav-group__header">
               <button
                 type="button"
@@ -151,6 +160,7 @@ function navigate(location) {
                 type="button"
                 class="admin-nav-subitem"
                 :class="{ 'admin-nav-subitem--active': isChildActive(item, child) }"
+                :aria-current="isChildActive(item, child) ? 'location' : undefined"
                 @click="navigate({ path: item.to, hash: child.hash })"
               >
                 {{ child.label }}
