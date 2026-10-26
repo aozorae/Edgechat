@@ -13,7 +13,9 @@ import {
  */
 
 const DEFAULT_TRIAL_REGISTER_URL = "https://sag.lanxingbei.cn/api/trial-register";
-const TIMEOUT_MS = 15000;
+/** 开户请求超时（15s）：trial-register 不可用时就放弃开户，绝不阻塞建号（TASK-133 建号钩子验收项）。 */
+export const TRIAL_REGISTER_TIMEOUT_MS = 15000;
+const TIMEOUT_MS = TRIAL_REGISTER_TIMEOUT_MS;
 
 function trialRegisterUrl(env) {
   return String(env.MEMORY_TRIAL_REGISTER_URL || DEFAULT_TRIAL_REGISTER_URL);
