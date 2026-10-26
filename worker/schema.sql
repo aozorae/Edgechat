@@ -697,8 +697,11 @@ CREATE TABLE IF NOT EXISTS text_session_reports (
   last_message_id INTEGER NOT NULL,
   user_id INTEGER NOT NULL,
   session_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'reported', 'failed')),
+  attempts INTEGER NOT NULL DEFAULT 0,
   pi_status INTEGER,
   reported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_attempt_at TEXT,
   PRIMARY KEY (room_id, last_message_id)
 );
 

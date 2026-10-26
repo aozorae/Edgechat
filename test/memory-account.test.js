@@ -17,7 +17,7 @@ import {
 } from "../worker/src/integrations/memory/accounts.js";
 import { fetchSessionOpening, reportSessionEnded } from "../worker/src/integrations/memory/pi-client.js";
 import { ensureMemoryAccount } from "../worker/src/integrations/memory/trial-register.js";
-import { settleTextSession } from "../worker/src/integrations/memory/text-session.js";
+import { retryFailedReports, settleTextSession, sessionIdFor } from "../worker/src/integrations/memory/text-session.js";
 import { runAiReply } from "../worker/src/integrations/ai-reply/runner.js";
 import { buildChatMessages } from "../worker/src/integrations/ai-reply/persona.js";
 import { createD1Adapter, createKvAdapter } from "./support/d1.js";
@@ -198,6 +198,62 @@ test("文本会话结算：幂等、无台账降级、202 记录", async () => {
   const report = await getTextSessionReport(env.DB, dm.id, message.id);
   assert.equal(Number(report.pi_status), 202);
   assert.equal(database.exec("SELECT COUNT(*) FROM text_session_reports")[0].values[0][0], 1);
+});
+
+test("T7：pi 非 2xx 不永久丢摘要——cron 重试成功", async () => {
+  const { env } = await createEnv();
+  const { user, dm } = await seedBenbenDm(env);
+  await saveMemoryAccount(env, user.id, { customerId: "CUST-T0042", token: "sagk_t", deviceId: memoryDeviceId(user.id) });
+  const message = await insertMessage(env, { channelId: dm.id, senderId: user.id, content: "在吗" });
+
+  let call = 0;
+  const piFetch = async () => {
+    call += 1;
+    return call === 1
+      ? { status: 503, text: async () => JSON.stringify({ error: "disabled" }) }
+      : { status: 202, text: async () => JSON.stringify({ ok: true, accepted: true }) };
+  };
+  const first = await settleTextSession(env, {
+    roomId: dm.id,
+    userId: user.id,
+    lastMessageId: message.id,
+    fetchImpl: piFetch
+  });
+  assert.equal(first.status, "pi_failed");
+  const failed = await getTextSessionReport(env.DB, dm.id, message.id);
+  assert.equal(failed.status, "failed");
+  assert.equal(Number(failed.pi_status), 503);
+  assert.ok(Number(failed.attempts) >= 1);
+
+  // 模拟时间过去：把 last_attempt_at 拨到 10 分钟前，cron 才能拾取
+  await env.DB
+    .prepare(`UPDATE text_session_reports SET last_attempt_at = datetime('now', '-10 minutes') WHERE room_id = ? AND last_message_id = ?`)
+    .bind(dm.id, message.id)
+    .run();
+  const retry = await retryFailedReports(env, { fetchImpl: piFetch });
+  assert.equal(retry.retried, 1);
+  assert.equal(retry.recovered, 1);
+  const reported = await getTextSessionReport(env.DB, dm.id, message.id);
+  assert.equal(reported.status, "reported");
+  assert.equal(Number(reported.pi_status), 202);
+});
+
+test("T8：session_id 语义唯一（chat_dm_<roomId>_<lastMessageId>）且落库一致", async () => {
+  const { env } = await createEnv();
+  const { user, dm } = await seedBenbenDm(env);
+  await saveMemoryAccount(env, user.id, { customerId: "CUST-T0042", token: "sagk_t", deviceId: memoryDeviceId(user.id) });
+  const message = await insertMessage(env, { channelId: dm.id, senderId: user.id, content: "在吗" });
+  const expected = `chat_dm_${dm.id}_${message.id}`;
+  assert.equal(sessionIdFor(dm.id, message.id), expected);
+
+  await settleTextSession(env, {
+    roomId: dm.id,
+    userId: user.id,
+    lastMessageId: message.id,
+    fetchImpl: async () => ({ status: 202, text: async () => "{}" })
+  });
+  const report = await getTextSessionReport(env.DB, dm.id, message.id);
+  assert.equal(report.session_id, expected);
 });
 
 test("ai-reply 注入：有摘要注入 system prompt，无摘要严格等于纯人设", async () => {

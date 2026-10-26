@@ -93,11 +93,11 @@ export async function saveMemoryAccount(env, userId, { customerId, token, device
 
 // ===== 文本会话结算 =====
 
-/** 该消息是否已结算过（幂等键 room_id + last_message_id）。 */
+/** 该消息的结算记录（幂等键 room_id + last_message_id）。 */
 export async function getTextSessionReport(db, roomId, lastMessageId) {
   const { results } = await db
     .prepare(
-      `SELECT room_id, last_message_id, user_id, session_id, pi_status, reported_at
+      `SELECT room_id, last_message_id, user_id, session_id, status, attempts, pi_status, reported_at, last_attempt_at
        FROM text_session_reports WHERE room_id = ? AND last_message_id = ? LIMIT 1`
     )
     .bind(Number(roomId), Number(lastMessageId))
@@ -105,25 +105,47 @@ export async function getTextSessionReport(db, roomId, lastMessageId) {
   return results?.[0] || null;
 }
 
-/** 记录一次结算（先占位再转调，失败可标记 pi_status）。返回 created=false 表示已存在。 */
+/** 记录一次结算（先占位 pending，再转调）。返回 created=false 表示已存在。 */
 export async function createTextSessionReport(db, { roomId, lastMessageId, userId, sessionId }) {
   const result = await db
     .prepare(
-      `INSERT OR IGNORE INTO text_session_reports (room_id, last_message_id, user_id, session_id)
-       VALUES (?, ?, ?, ?)`
+      `INSERT OR IGNORE INTO text_session_reports (room_id, last_message_id, user_id, session_id, status, attempts, last_attempt_at)
+       VALUES (?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`
     )
     .bind(Number(roomId), Number(lastMessageId), Number(userId), String(sessionId))
     .run();
   return Number(result.meta?.changes || 0) > 0;
 }
 
-export async function updateTextSessionReportStatus(db, { roomId, lastMessageId, piStatus }) {
+/**
+ * 写入本次转调结果（状态机 pending → reported / failed）。
+ * 每次尝试 attempts+1，last_attempt_at 更新（cron 拾取重试用）。
+ */
+export async function updateTextSessionReportResult(db, { roomId, lastMessageId, piStatus, ok }) {
   await db
     .prepare(
-      `UPDATE text_session_reports SET pi_status = ?
+      `UPDATE text_session_reports
+       SET status = ?, pi_status = ?, attempts = attempts + 1, last_attempt_at = CURRENT_TIMESTAMP
        WHERE room_id = ? AND last_message_id = ?`
     )
-    .bind(piStatus === null || piStatus === undefined ? null : Number(piStatus), Number(roomId), Number(lastMessageId))
+    .bind(
+      ok ? "reported" : "failed",
+      piStatus === null || piStatus === undefined ? null : Number(piStatus),
+      Number(roomId),
+      Number(lastMessageId)
+    )
+    .run();
+}
+
+/** 重试前把记录标记为再次尝试（保持 pending，attempts 由结果写入时 +1）。 */
+export async function markTextSessionRetry(db, { roomId, lastMessageId }) {
+  await db
+    .prepare(
+      `UPDATE text_session_reports
+       SET status = 'pending', last_attempt_at = CURRENT_TIMESTAMP
+       WHERE room_id = ? AND last_message_id = ?`
+    )
+    .bind(Number(roomId), Number(lastMessageId))
     .run();
 }
 
@@ -155,12 +177,32 @@ export async function listStalePendingDmSessions(db, { botId, minSilentMinutes =
        JOIN channel_members b ON b.channel_id = m.channel_id AND b.user_id = ?
        WHERE m.deleted_at IS NULL
          AND m.created_at <= datetime('now', ?)
-         AND m.id > COALESCE((SELECT MAX(r.last_message_id) FROM text_session_reports r WHERE r.room_id = m.channel_id), 0)
+         AND m.id > COALESCE((SELECT MAX(r.last_message_id) FROM text_session_reports r WHERE r.room_id = m.channel_id AND r.status = 'reported'), 0)
        GROUP BY m.channel_id
        ORDER BY MAX(m.id) ASC
        LIMIT ?`
     )
     .bind(Number(botId), `-${Number(minSilentMinutes) || 30} minutes`, Number(limit) || 20)
+    .all();
+  return results || [];
+}
+
+/**
+ * cron 拾取"pi 非 2xx/网络失败"的结算记录做限次重试（防该段摘要永久静默丢失）。
+ * 条件：status IN ('pending','failed') 且 attempts < maxAttempts 且距上次尝试超过 minAgeMinutes。
+ */
+export async function listRetryableReports(db, { maxAttempts = 3, minAgeMinutes = 5, limit = 20 } = {}) {
+  const { results } = await db
+    .prepare(
+      `SELECT room_id, last_message_id, user_id, session_id, status, attempts
+       FROM text_session_reports
+       WHERE status IN ('pending', 'failed')
+         AND attempts < ?
+         AND (last_attempt_at IS NULL OR last_attempt_at <= datetime('now', ?))
+       ORDER BY last_attempt_at ASC
+       LIMIT ?`
+    )
+    .bind(Number(maxAttempts) || 3, `-${Number(minAgeMinutes) || 5} minutes`, Number(limit) || 20)
     .all();
   return results || [];
 }

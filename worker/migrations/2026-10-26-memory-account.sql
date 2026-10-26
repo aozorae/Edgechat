@@ -15,14 +15,19 @@ CREATE TABLE IF NOT EXISTS user_memory_accounts (
 CREATE INDEX IF NOT EXISTS idx_user_memory_accounts_status
   ON user_memory_accounts(status, updated_at);
 
--- 文本会话结算记录：一条 (room_id, last_message_id) 只结算一次，防重复上报
+-- 文本会话结算记录：一条 (room_id, last_message_id) 只结算一次，防重复上报。
+-- status 状态机：pending → reported（pi 2xx）/ failed（非 2xx 或网络失败，cron 限次重试）
+-- attempts / last_attempt_at 用于 cron 拾取失败重试（避免 pi 失败后该段摘要永久丢失）。
 CREATE TABLE IF NOT EXISTS text_session_reports (
   room_id INTEGER NOT NULL,
   last_message_id INTEGER NOT NULL,
   user_id INTEGER NOT NULL,
   session_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'reported', 'failed')),
+  attempts INTEGER NOT NULL DEFAULT 0,
   pi_status INTEGER,
   reported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_attempt_at TEXT,
   PRIMARY KEY (room_id, last_message_id)
 );
 
