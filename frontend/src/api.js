@@ -347,7 +347,19 @@ export default {
       body: payload
     });
   },
-  revokeAdminRegisterLink(inviteId) {
+  getAdminDistributionConfig() {
+    return request('/admin/distribution/config');
+  },
+  updateAdminDistributionConfig(payload) {
+    return request('/admin/distribution/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    });
+  },
+  getAdminDistributionTree() {
+    return request('/admin/distribution/tree');
+  },  revokeAdminRegisterLink(inviteId) {
     return request(`/admin/register-links/${inviteId}`, {
       method: 'DELETE'
     });

@@ -81,7 +81,7 @@ export async function revokeRegistrationInvite(db, inviteId) {
 
 export async function getAvailableRegistrationInvite(db, token) {
   const row = await db.prepare(
-    `SELECT id, note, max_uses, used_count, created_at
+    `SELECT id, note, max_uses, used_count, created_at, created_by
      FROM registration_invites
      WHERE token = ?
        AND deleted_at IS NULL
@@ -101,21 +101,32 @@ export async function getAvailableRegistrationInvite(db, token) {
     maxUses: Number(row.max_uses),
     usedCount: Number(row.used_count),
     remainingUses: Math.max(0, Number(row.max_uses) - Number(row.used_count)),
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    createdBy: row.created_by == null ? null : Number(row.created_by)
   };
 }
 
 export async function createUserWithRegistrationInvite(db, user) {
   try {
+    const invitedBy = user.invitedBy == null ? null : Number(user.invitedBy);
     const [userResult] = await db.batch([
       db.prepare(
         `INSERT INTO users (
            username,
            display_name,
            password_hash,
-           password_salt
-         ) VALUES (?, ?, ?, ?)`
-      ).bind(user.username, user.displayName, user.passwordHash, user.passwordSalt),
+           password_salt,
+           invited_by,
+           invited_at
+         ) VALUES (?, ?, ?, ?, ?, CASE WHEN ? IS NULL THEN NULL ELSE CURRENT_TIMESTAMP END)`
+      ).bind(
+        user.username,
+        user.displayName,
+        user.passwordHash,
+        user.passwordSalt,
+        invitedBy,
+        invitedBy
+      ),
       db.prepare(
         `INSERT INTO registration_invite_uses (invite_id, user_id)
          VALUES (?, (SELECT id FROM users WHERE username = ?))`

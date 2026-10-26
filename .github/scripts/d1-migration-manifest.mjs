@@ -241,6 +241,11 @@ export const D1_MIGRATIONS = [
       "index:idx_telegram_notification_sender", "index:idx_telegram_notification_recipient",
       "index:idx_telegram_notification_created", "index:idx_telegram_notification_message"],
   },
+  {
+    id: "2026-10-26-distribution",
+    file: "worker/migrations/2026-10-26-distribution.sql",
+    artifacts: ["column:users.invited_by", "column:users.invited_at", "index:idx_users_invited_by"],
+  },
 ];
 
 // b3f6855 曾发布、0c13e8f 已撤回的迁移：仅识别历史 ledger，不要求新安装创建废弃表，也不删除旧数据。

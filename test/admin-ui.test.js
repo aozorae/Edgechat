@@ -79,7 +79,7 @@ test('侧栏包含存储统计并移除消息查看入口', () => {
 test('仪表盘独立置顶，业务分类与分隔线下的系统入口顺序固定', () => {
   assert.deepEqual(adminNavigation.map((section) => section.items.map((item) => item.id)), [
     ['dashboard'],
-    ['rbac', 'channels', 'users', 'invites'],
+    ['rbac', 'channels', 'users', 'invites', 'distribution'],
     ['telegram', 'instance-bridge'],
     ['site', 'storage', 'maintenance', 'stealth']
   ]);
@@ -95,7 +95,7 @@ test('仪表盘独立置顶，业务分类与分隔线下的系统入口顺序�
 
 test('用户相关入口图标彼此区分且顶栏同步同一来源', () => {
   const items = adminNavigation[1].items;
-  assert.equal(new Set(items.map((item) => item.icon)).size, 4);
+  assert.equal(new Set(items.map((item) => item.icon)).size, 5);
   for (const item of adminNavigation.flatMap((section) => section.items)) {
     assert.equal(adminRouteIcons[item.id], item.icon);
   }

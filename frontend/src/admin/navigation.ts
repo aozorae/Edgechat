@@ -1,4 +1,4 @@
-import { Database, Gauge, Ghost, Link2, MessagesSquare, Palette, Send, ShieldCheck, UserPlus, Users, Wrench } from '@lucide/vue';
+import { Database, Gauge, Ghost, Link2, MessagesSquare, Palette, Send, Share2, ShieldCheck, UserPlus, Users, Wrench } from '@lucide/vue';
 
 interface NavigationItem {
   id: string;
@@ -40,7 +40,8 @@ export const adminNavigation: NavigationSection[] = [
           { id: 'create-user', labelKey: 'admin.nav.createUser', hash: '#create-user', permission: 'users.create' },
           { id: 'registration-links', labelKey: 'admin.nav.registrationLinks', hash: '#registration-links', permission: 'invites.read' }
         ]
-      }
+      },
+      { id: 'distribution', labelKey: 'admin.nav.distribution', descriptionKey: 'admin.nav.distributionDescription', to: '/admin/distribution', icon: Share2 }
     ]
   },
   {

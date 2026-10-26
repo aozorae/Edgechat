@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_salt TEXT NOT NULL,
   avatar_key TEXT,
   registration_invite_id INTEGER UNIQUE,
+  invited_by INTEGER REFERENCES users(id),
+  invited_at TEXT,
   is_disabled INTEGER NOT NULL DEFAULT 0,
   disabled_until TEXT,
   is_admin INTEGER NOT NULL DEFAULT 0,
@@ -20,6 +22,8 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_invited_by ON users(invited_by);
 
 CREATE TABLE IF NOT EXISTS rbac_roles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

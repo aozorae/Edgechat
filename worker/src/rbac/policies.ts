@@ -15,6 +15,10 @@ export const ADMIN_POLICIES = [
   policy('invites.list', 'GET', 'register-links', ['invites.read']),
   policy('invites.create', 'POST', 'register-links', ['invites.create'], { fields: ['note', 'maxUses'], audit: true }),
   policy('invites.revoke', 'DELETE', 'register-links/([1-9]\\d*)', ['invites.revoke'], { audit: true }),
+  // 期一：分发制后台（复用 invites 权限，不新增权限点，避免影响已有角色授权）
+  policy('distribution.config.read', 'GET', 'distribution/config', ['invites.read']),
+  policy('distribution.config.update', 'PUT', 'distribution/config', ['invites.create'], { fields: ['gateEnabled', 'treeVisible'], audit: true }),
+  policy('distribution.tree.read', 'GET', 'distribution/tree', ['invites.read']),
   policy('channels.list', 'GET', 'channels', ['channels.read']),
   policy('channels.delete', 'DELETE', 'channels/([1-9]\\d*)', ['channels.delete'], { audit: true }),
   policy('dms.list', 'GET', 'dms', [], { superOnly: true }),

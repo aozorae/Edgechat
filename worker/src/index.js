@@ -19,6 +19,10 @@ import { listActiveUsers } from './data/users.js';
 import { ApiError } from './errors.js';
 import { adminMiddleware, authMiddleware } from './middleware.js';
 import { registerAdminRoutes } from './api/admin.js';
+import {
+  registerDistributionAdminRoutes,
+  registerDistributionPublicRoutes
+} from './api/distribution.js';
 import { registerRbacRoutes } from './api/rbac.ts';
 import { registerStorageRoutes } from './api/storage.ts';
 import { registerMaintenanceRoutes } from './api/maintenance.ts';
@@ -143,7 +147,8 @@ app.post('/api/register-links/:token/register', async (c) => {
     username,
     displayName,
     passwordHash: hashed.hash,
-    passwordSalt: hashed.salt
+    passwordSalt: hashed.salt,
+    invitedBy: invite.createdBy
   });
 
   await ensureGeneralChannelMembership(c.env.DB, userId);
@@ -171,6 +176,9 @@ app.post('/api/auth/login', async (c) => {
   });
 });
 
+// 期一：分发制公开接口（验证码校验沿用 /api/register-links；config 与 auto-register 公开）
+// 注意：必须注册在 v1 路由之前，否则会命中 v1 的登录中间件链（401）
+registerDistributionPublicRoutes(app);
 registerV1Routes(app);
 
 app.use('/api/*', authMiddleware);
@@ -295,6 +303,8 @@ registerUserProfileRoutes(app);
 registerUploadRoutes(app);
 registerChannelRoutes(app);
 registerAdminRoutes(app);
+// 期一：分发制后台接口（分发总开关 + 一级邀请树，仅管理员）
+registerDistributionAdminRoutes(app);
 registerRbacRoutes(app);
 registerStorageRoutes(app);
 registerMaintenanceRoutes(app);

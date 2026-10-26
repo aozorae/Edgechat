@@ -74,6 +74,12 @@ const router = createRouter({
           meta: { admin: true, adminTitleKey: 'admin.nav.invites', adminIcon: 'invites', transition: 'page' }
         },
         {
+          path: 'distribution',
+          name: 'admin-distribution',
+          component: () => import('./pages/AdminDistributionPage.vue'),
+          meta: { admin: true, adminTitleKey: 'admin.nav.distribution', adminIcon: 'distribution', transition: 'page' }
+        },
+        {
           path: 'telegram',
           name: 'admin-telegram',
           component: () => import('./pages/AdminTelegramPage.vue'),
