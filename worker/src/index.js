@@ -183,6 +183,11 @@ app.post('/api/auth/login', async (c) => {
 // 期一：分发制公开接口（验证码校验沿用 /api/register-links；config 与 auto-register 公开）
 // 注意：必须注册在 v1 路由之前，否则会命中 v1 的登录中间件链（401）
 registerDistributionPublicRoutes(app);
+// TASK-133：Chat 版记忆（客户端文本会话结算上报）。
+// 必须注册在 v1 路由之前：v1 的 /api/v1/* legacy 代理兜底（api/v1.js app.all）注册更早时
+// 会把 /api/v1/memory/* 吞掉转发到不存在的 legacy 路径（本地链路实测 404，2026-10-26）。
+// 因此这里显式挂 authMiddleware，不依赖下方 /api/* 的全局中间件。
+registerMemoryRoutes(app);
 registerV1Routes(app);
 
 app.use('/api/*', authMiddleware);
@@ -299,8 +304,6 @@ app.get('/api/bootstrap', async (c) => {
 app.use('/api/admin/*', adminMiddleware);
 
 registerMessageRoutes(app);
-// TASK-133：Chat 版记忆（客户端文本会话结算上报）
-registerMemoryRoutes(app);
 registerContactRoutes(app);
 registerDmRoutes(app);
 registerCallRoutes(app);

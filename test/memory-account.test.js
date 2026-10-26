@@ -326,6 +326,53 @@ test("ai-reply 降级：无台账时 system prompt 不含摘要、回复正常",
   assert.equal(capturedSystem.includes("上次聊天的摘要"), false);
 });
 
+test("路由级：/api/v1/memory/text-session/ended 走真实 HTTP 202，不被 v1 legacy 兜底吞掉", async (t) => {
+  // 背景：registerMemoryRoutes 若注册在 registerV1Routes 之后，/api/v1/* 的 legacy 代理兜底
+  // 会把该路径转发到不存在的 legacy 路由 → 404（本地链路实测 2026-10-26）。
+  const { env } = await createEnv();
+  const { user, dm } = await seedBenbenDm(env);
+  await saveMemoryAccount(env, user.id, { customerId: "CUST-T0042", token: "sagk_t", deviceId: memoryDeviceId(user.id) });
+  const message = await insertMessage(env, { channelId: dm.id, senderId: user.id, content: "在吗" });
+  const session = await createSession(env, { ...user, id: Number(user.id) });
+  t.mock.method(globalThis, "fetch", async () => ({ status: 202, text: async () => JSON.stringify({ ok: true }) }));
+
+  const res = await worker.fetch(
+    new Request("https://memory.test/api/v1/memory/text-session/ended", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.token}` },
+      body: JSON.stringify({ roomId: dm.id, lastMessageId: message.id, turnCount: 1, lastUserText: "在吗" })
+    }),
+    env,
+    { waitUntil: () => {} }
+  );
+  assert.equal(res.status, 202);
+  const body = await res.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.status, "reported");
+  const report = await getTextSessionReport(env.DB, dm.id, message.id);
+  assert.equal(report.status, "reported");
+
+  // 非笨笨 DM（普通房）→ ignored_not_benben_dm，同样不被 legacy 兜底吞掉
+  const other = await seedUser(env, "stranger");
+  const strangerSession = await createSession(env, { ...other, id: Number(other.id) });
+  await env.DB.prepare(`INSERT INTO channels (kind, name) VALUES ('public', '随便聊')`).run();
+  const pub = await env.DB.prepare(`SELECT MAX(id) AS id FROM channels`).first();
+  await env.DB.prepare(`INSERT INTO channel_members (channel_id, user_id) VALUES (?, ?)`).bind(pub.id, other.id).run();
+  await env.DB.prepare(`INSERT INTO channel_members (channel_id, user_id) VALUES (?, ?)`).bind(pub.id, user.id).run();
+  const pubMsg = await insertMessage(env, { channelId: pub.id, senderId: other.id, content: "hi" });
+  const ignored = await worker.fetch(
+    new Request("https://memory.test/api/v1/memory/text-session/ended", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${strangerSession.token}` },
+      body: JSON.stringify({ roomId: pub.id, lastMessageId: pubMsg.id })
+    }),
+    env,
+    { waitUntil: () => {} }
+  );
+  assert.equal(ignored.status, 202);
+  assert.equal((await ignored.json()).status, "ignored_not_benben_dm");
+});
+
 test("admin 接口：台账只读不含令牌，普通用户 403", async () => {
   const { env } = await createEnv();
   const admin = await seedUser(env, "root");

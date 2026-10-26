@@ -1,3 +1,4 @@
+import { authMiddleware } from "../middleware.js";
 import { errorResponse, parseJsonRequest } from "../utils.js";
 import { getMemoryAccount } from "../integrations/memory/accounts.js";
 import { settleTextSession } from "../integrations/memory/text-session.js";
@@ -10,7 +11,7 @@ import { settleTextSession } from "../integrations/memory/text-session.js";
  * 安全：任何响应都不返回令牌明文；只回 has_account / customer_id / status。
  */
 export function registerMemoryRoutes(app) {
-  app.post("/api/v1/memory/text-session/ended", async (c) => {
+  app.post("/api/v1/memory/text-session/ended", authMiddleware, async (c) => {
     const session = c.get("session");
     const payload = await parseJsonRequest(c.req.raw);
     const roomId = Number(payload.roomId);
