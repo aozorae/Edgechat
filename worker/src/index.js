@@ -42,6 +42,9 @@ import { registerCallRoutes } from './api/calls.ts';
 import { VoiceCall } from './do/VoiceCall.ts';
 import { TelegramNotifications } from './do/TelegramNotifications.ts';
 import { registerMessageRoutes } from './api/messages.js';
+import { registerMemoryAdminRoutes, registerMemoryRoutes } from './api/memory.js';
+import { backfillStaleSessions } from './integrations/memory/text-session.js';
+import { ensureBenbenBot } from './data/distribution.js';
 import { registerUploadRoutes } from './api/upload.js';
 import { registerUserBlockRoutes } from './api/user-blocks.ts';
 import { registerUserProfileRoutes } from './api/user-profile.ts';
@@ -296,6 +299,8 @@ app.get('/api/bootstrap', async (c) => {
 app.use('/api/admin/*', adminMiddleware);
 
 registerMessageRoutes(app);
+// TASK-133：Chat 版记忆（客户端文本会话结算上报）
+registerMemoryRoutes(app);
 registerContactRoutes(app);
 registerDmRoutes(app);
 registerCallRoutes(app);
@@ -308,6 +313,8 @@ registerAdminRoutes(app);
 registerDistributionAdminRoutes(app);
 // 期一增项：文本回复链后台接口（开关 / 每日上限 / 用量统计，仅管理员）
 registerAiReplyAdminRoutes(app);
+// TASK-133：记忆台账只读后台接口（不含令牌）
+registerMemoryAdminRoutes(app);
 registerRbacRoutes(app);
 registerStorageRoutes(app);
 registerMaintenanceRoutes(app);
@@ -368,6 +375,25 @@ export default {
   fetch: createSiteEntry(app.fetch),
   async scheduled(controller, env, ctx) {
     const tasks = [rescueBridgeDeliveries(env), rescueTelegramNotifications(env)];
+    // TASK-133：文本会话结算兜底（客户端漏报时按"静默 >30 分钟"补报）
+    tasks.push(
+      (async () => {
+        try {
+          const bot = await ensureBenbenBot(env.DB);
+          const result = await backfillStaleSessions(env, { botId: Number(bot.id) });
+          if (result.scanned) {
+            console.log(JSON.stringify({ message: "text_session backfill", ...result }));
+          }
+        } catch (error) {
+          console.error(
+            JSON.stringify({
+              message: "text_session backfill failed",
+              error: error instanceof Error ? error.message : String(error)
+            })
+          );
+        }
+      })()
+    );
     // 免费账户的 cron 数量是账户级上限；复用 15 分钟触发器，在 UTC 19:00 的轮次追加每日 GC。
     if (shouldRunDailyGc(controller.scheduledTime)) tasks.push(runScheduledGc(env), pruneTelegramNotifications(env));
     ctx.waitUntil(Promise.all(tasks));

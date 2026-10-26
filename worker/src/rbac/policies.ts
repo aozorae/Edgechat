@@ -23,6 +23,8 @@ export const ADMIN_POLICIES = [
   policy('ai_reply.config.read', 'GET', 'ai-reply/config', ['invites.read']),
   policy('ai_reply.config.update', 'PUT', 'ai-reply/config', ['invites.create'], { fields: ['enabled', 'dailyLimit'], audit: true }),
   policy('ai_reply.stats.read', 'GET', 'ai-reply/stats', ['invites.read']),
+  // TASK-133：记忆台账只读后台（复用 users.read，不新增权限点；响应不含令牌）
+  policy('memory.account.read', 'GET', 'memory/account', ['users.read']),
   policy('channels.list', 'GET', 'channels', ['channels.read']),
   policy('channels.delete', 'DELETE', 'channels/([1-9]\\d*)', ['channels.delete'], { audit: true }),
   policy('dms.list', 'GET', 'dms', [], { superOnly: true }),

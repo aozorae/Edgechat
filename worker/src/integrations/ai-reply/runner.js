@@ -1,4 +1,6 @@
 import { insertMessage, listMessages } from "../../data/messages.js";
+import { readMemoryToken } from "../memory/accounts.js";
+import { fetchSessionOpening } from "../memory/pi-client.js";
 import { buildChatMessages } from "./persona.js";
 import { requestDashScopeReply } from "./provider.js";
 import {
@@ -44,6 +46,7 @@ export async function runAiReply({
   triggerMessage,
   onReply = async () => {},
   providerFetch = fetch,
+  memoryFetch = fetch,
   now = new Date(),
   sleep = defaultSleep
 } = {}) {
@@ -93,7 +96,46 @@ export async function runAiReply({
 
   const contextLimit = envInt(env, "AI_REPLY_CONTEXT_MESSAGES", DEFAULT_CONTEXT_MESSAGES, 30);
   const history = await listMessages(env, room.id, null, contextLimit);
-  const messages = buildChatMessages({ history, botId: dm.botId });
+  // TASK-133：记忆注入（文本提示词在服务端，这是唯一注入点；失败/无台账一律退化为现状）
+  let recapPrompt = "";
+  try {
+    const account = await readMemoryToken(env, dm.recipientUserId);
+    if (account) {
+      const opening = await fetchSessionOpening(env, account.token, { fetchImpl: memoryFetch });
+      if (opening.available) {
+        recapPrompt = opening.prompt;
+        console.log(
+          JSON.stringify({
+            message: "recap injected",
+            userId: dm.recipientUserId,
+            roomId: Number(room.id),
+            len: recapPrompt.length
+          })
+        );
+      } else {
+        console.log(
+          JSON.stringify({
+            message: "recap skipped",
+            userId: dm.recipientUserId,
+            reason: opening.reason
+          })
+        );
+      }
+    } else {
+      console.log(
+        JSON.stringify({ message: "recap skipped", userId: dm.recipientUserId, reason: "no_account" })
+      );
+    }
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        message: "recap skipped",
+        userId: dm.recipientUserId,
+        reason: `error: ${String(error?.message || error).slice(0, 120)}`
+      })
+    );
+  }
+  const messages = buildChatMessages({ history, botId: dm.botId, recapPrompt });
 
   const maxTokens = envInt(env, "AI_REPLY_MAX_TOKENS", DEFAULT_MAX_TOKENS, 2000);
   const timeoutMs = envInt(env, "AI_REPLY_TIMEOUT_MS", DEFAULT_TIMEOUT_MS, 60000);

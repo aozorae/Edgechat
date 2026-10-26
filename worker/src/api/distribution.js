@@ -14,6 +14,7 @@ import {
   getAvailableRegistrationInvite
 } from '../data/registration-invites.js';
 import { createMobileDeviceSession } from '../mobile-session.js';
+import { ensureMemoryAccount } from '../integrations/memory/trial-register.js';
 import { ApiError } from '../errors.js';
 import { errorResponse, parseJsonRequest, randomToken } from '../utils.js';
 import { hasPermission } from '../../../shared/admin-permissions.ts';
@@ -127,6 +128,13 @@ export function registerDistributionPublicRoutes(app) {
       installationId,
       name: deviceName
     });
+
+    // ⑤ TASK-133：建号即开户（异步，不阻塞建号响应；失败不影响建号，记忆侧自动降级）
+    try {
+      c.executionCtx.waitUntil(ensureMemoryAccount(c.env, Number(user.id)));
+    } catch {
+      // 测试环境可能没有 executionCtx：退化为不预开，等懒补开
+    }
 
     return c.json({
       ok: true,

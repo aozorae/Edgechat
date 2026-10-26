@@ -676,6 +676,35 @@ CREATE INDEX IF NOT EXISTS idx_ai_reply_jobs_recipient
 CREATE INDEX IF NOT EXISTS idx_ai_reply_jobs_status
   ON ai_reply_jobs(status, created_at);
 
+-- TASK-133：Chat 版记忆 A 方案（每用户 SAG 试用号台账 + 文本会话结算记录）
+CREATE TABLE IF NOT EXISTS user_memory_accounts (
+  user_id INTEGER PRIMARY KEY,
+  device_id TEXT NOT NULL UNIQUE,
+  customer_id TEXT,
+  sag_token_cipher TEXT,
+  token_key_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'active', 'failed')),
+  last_error TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_memory_accounts_status
+  ON user_memory_accounts(status, updated_at);
+
+CREATE TABLE IF NOT EXISTS text_session_reports (
+  room_id INTEGER NOT NULL,
+  last_message_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  session_id TEXT NOT NULL,
+  pi_status INTEGER,
+  reported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (room_id, last_message_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_text_session_reports_user
+  ON text_session_reports(user_id, reported_at);
+
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value)
 VALUES ('site_name', 'Edgechat');
 
