@@ -13,7 +13,7 @@ import {
  */
 
 const DEFAULT_TRIAL_REGISTER_URL = "https://sag.lanxingbei.cn/api/trial-register";
-const TIMEOUT_MS = 8000;
+const TIMEOUT_MS = 15000;
 
 function trialRegisterUrl(env) {
   return String(env.MEMORY_TRIAL_REGISTER_URL || DEFAULT_TRIAL_REGISTER_URL);

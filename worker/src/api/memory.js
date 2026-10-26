@@ -37,6 +37,21 @@ export function registerMemoryRoutes(app) {
       return errorResponse("消息不存在", 400);
     }
 
+    // 只允许「用户 ↔ 笨笨」一对一 DM（避免把普通用户间 DM 当记忆结算）
+    const bot = await c.env.DB.prepare(
+      `SELECT id FROM users WHERE username = 'benben' AND deleted_at IS NULL LIMIT 1`
+    ).first();
+    const botId = Number(bot?.id || 0);
+    const members = await c.env.DB.prepare(
+      `SELECT user_id FROM channel_members WHERE channel_id = ?`
+    )
+      .bind(roomId)
+      .all();
+    const memberIds = (members.results || []).map((row) => Number(row.user_id));
+    if (!botId || !memberIds.includes(botId) || memberIds.length !== 2) {
+      return c.json({ ok: true, accepted: true, status: "ignored_not_benben_dm" }, 202);
+    }
+
     const result = await settleTextSession(c.env, {
       roomId,
       userId: Number(session.userId),

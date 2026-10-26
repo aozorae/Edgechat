@@ -105,12 +105,12 @@ export async function getTextSessionReport(db, roomId, lastMessageId) {
   return results?.[0] || null;
 }
 
-/** 记录一次结算（先占位 pending，再转调）。返回 created=false 表示已存在。 */
+/** 记录一次结算（先占位 pending，attempts=0 表示"尚未尝试"；首次转调时由结果写入 +1）。返回 created=false 表示已存在。 */
 export async function createTextSessionReport(db, { roomId, lastMessageId, userId, sessionId }) {
   const result = await db
     .prepare(
       `INSERT OR IGNORE INTO text_session_reports (room_id, last_message_id, user_id, session_id, status, attempts, last_attempt_at)
-       VALUES (?, ?, ?, ?, 'pending', 1, CURRENT_TIMESTAMP)`
+       VALUES (?, ?, ?, ?, 'pending', 0, CURRENT_TIMESTAMP)`
     )
     .bind(Number(roomId), Number(lastMessageId), Number(userId), String(sessionId))
     .run();
@@ -149,11 +149,16 @@ export async function markTextSessionRetry(db, { roomId, lastMessageId }) {
     .run();
 }
 
-/** 某 DM 最近一条已结算的消息 id（用于判断"是否有未结算的新消息"）。 */
+/**
+ * 某 DM 最近一条**已成功**结算的消息 id。
+ * 注意：仅用于排查/预留场景，**不是业务判定入口**——业务判定（cron 是否有未结算消息）必须带
+ * `status='reported'` 过滤（见 listStalePendingDmSessions），否则 pending/failed 行会被误当成"已结算"。
+ * 当前仓库无调用点（TASK-133 预留，供后台排查用）。
+ */
 export async function getLastReportedMessageId(db, roomId) {
   const { results } = await db
     .prepare(
-      `SELECT MAX(last_message_id) AS last_id FROM text_session_reports WHERE room_id = ?`
+      `SELECT MAX(last_message_id) AS last_id FROM text_session_reports WHERE room_id = ? AND status = 'reported'`
     )
     .bind(Number(roomId))
     .all();

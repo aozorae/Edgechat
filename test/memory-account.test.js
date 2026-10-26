@@ -223,7 +223,8 @@ test("T7：pi 非 2xx 不永久丢摘要——cron 重试成功", async () => {
   const failed = await getTextSessionReport(env.DB, dm.id, message.id);
   assert.equal(failed.status, "failed");
   assert.equal(Number(failed.pi_status), 503);
-  assert.ok(Number(failed.attempts) >= 1);
+  // 口径：插入 attempts=0，首次转调后 +1 → 1（首次 + 最多 2 次重试 = 共 3 次尝试）
+  assert.equal(Number(failed.attempts), 1);
 
   // 模拟时间过去：把 last_attempt_at 拨到 10 分钟前，cron 才能拾取
   await env.DB
@@ -236,6 +237,7 @@ test("T7：pi 非 2xx 不永久丢摘要——cron 重试成功", async () => {
   const reported = await getTextSessionReport(env.DB, dm.id, message.id);
   assert.equal(reported.status, "reported");
   assert.equal(Number(reported.pi_status), 202);
+  assert.equal(Number(reported.attempts), 2); // 首次 1 + 重试 1 = 2
 });
 
 test("T8：session_id 语义唯一（chat_dm_<roomId>_<lastMessageId>）且落库一致", async () => {
