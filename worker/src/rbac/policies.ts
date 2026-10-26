@@ -19,6 +19,10 @@ export const ADMIN_POLICIES = [
   policy('distribution.config.read', 'GET', 'distribution/config', ['invites.read']),
   policy('distribution.config.update', 'PUT', 'distribution/config', ['invites.create'], { fields: ['gateEnabled', 'treeVisible'], audit: true }),
   policy('distribution.tree.read', 'GET', 'distribution/tree', ['invites.read']),
+  // 期一增项：AI 回复链后台（复用 invites 权限，不新增权限点，避免影响已有角色授权）
+  policy('ai_reply.config.read', 'GET', 'ai-reply/config', ['invites.read']),
+  policy('ai_reply.config.update', 'PUT', 'ai-reply/config', ['invites.create'], { fields: ['enabled', 'dailyLimit'], audit: true }),
+  policy('ai_reply.stats.read', 'GET', 'ai-reply/stats', ['invites.read']),
   policy('channels.list', 'GET', 'channels', ['channels.read']),
   policy('channels.delete', 'DELETE', 'channels/([1-9]\\d*)', ['channels.delete'], { audit: true }),
   policy('dms.list', 'GET', 'dms', [], { superOnly: true }),

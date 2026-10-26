@@ -653,6 +653,29 @@ CREATE TABLE IF NOT EXISTS telegram_notification_gate (
 );
 INSERT OR IGNORE INTO telegram_notification_gate (id) VALUES (1);
 
+-- 期一增项：文本回复链任务记录（一条用户消息只回一次，幂等键 trigger_message_id）
+CREATE TABLE IF NOT EXISTS ai_reply_jobs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel_id INTEGER NOT NULL,
+  trigger_message_id INTEGER NOT NULL UNIQUE,
+  recipient_user_id INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK(status IN ('pending', 'running', 'done', 'failed', 'skipped')),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  provider TEXT NOT NULL DEFAULT '',
+  model TEXT NOT NULL DEFAULT '',
+  replied_message_id INTEGER,
+  error TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_reply_jobs_recipient
+  ON ai_reply_jobs(recipient_user_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_ai_reply_jobs_status
+  ON ai_reply_jobs(status, created_at);
+
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value)
 VALUES ('site_name', 'Edgechat');
 

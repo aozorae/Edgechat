@@ -23,6 +23,7 @@ import {
   registerDistributionAdminRoutes,
   registerDistributionPublicRoutes
 } from './api/distribution.js';
+import { registerAiReplyAdminRoutes } from './api/ai-reply.js';
 import { registerRbacRoutes } from './api/rbac.ts';
 import { registerStorageRoutes } from './api/storage.ts';
 import { registerMaintenanceRoutes } from './api/maintenance.ts';
@@ -305,6 +306,8 @@ registerChannelRoutes(app);
 registerAdminRoutes(app);
 // 期一：分发制后台接口（分发总开关 + 一级邀请树，仅管理员）
 registerDistributionAdminRoutes(app);
+// 期一增项：文本回复链后台接口（开关 / 每日上限 / 用量统计，仅管理员）
+registerAiReplyAdminRoutes(app);
 registerRbacRoutes(app);
 registerStorageRoutes(app);
 registerMaintenanceRoutes(app);
