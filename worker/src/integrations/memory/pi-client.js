@@ -67,6 +67,141 @@ export async function fetchSessionOpening(env, token, { fetchImpl = fetch, timeo
 }
 
 /**
+ * TASK-167：提交派师傅任务。
+ * POST /api/task {kind, params} → {ok, id}；kind = ask / search / patrol。
+ * 返回 { ok: boolean, id: string, reason: string, status: number }；失败不抛异常、不携带令牌。
+ */
+export async function submitPiTask(env, token, kind, params = {}, { fetchImpl = fetch, timeoutMs = 8000 } = {}) {
+  if (!token) return { ok: false, id: "", reason: "no_token", status: 0 };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(`${piBase(env)}/api/task`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-SAG-Token": token },
+      body: JSON.stringify({ kind: String(kind || "ask"), params: params || {} }),
+      signal: controller.signal
+    });
+    const text = await response.text();
+    let payload = null;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = null;
+    }
+    if (!response.ok) {
+      return { ok: false, id: "", reason: `http_${response.status}`, status: response.status };
+    }
+    if (!payload?.ok || !payload?.id) {
+      return { ok: false, id: "", reason: "bad_payload", status: response.status };
+    }
+    return { ok: true, id: String(payload.id), reason: "", status: response.status };
+  } catch (error) {
+    const name = String(error?.name || "");
+    return {
+      ok: false,
+      id: "",
+      reason: name === "AbortError" ? "timeout" : `network: ${safeDetail(error?.message || error)}`,
+      status: 0
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * TASK-167：拉取派师傅任务列表。
+ * GET /api/tasks → {tasks:[{id,status,result}]}，status = queued/running/done/error。
+ * 返回 { ok: boolean, tasks: Array, reason: string, status: number }。
+ */
+export async function fetchPiTasks(env, token, { fetchImpl = fetch, timeoutMs = 8000 } = {}) {
+  if (!token) return { ok: false, tasks: [], reason: "no_token", status: 0 };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(`${piBase(env)}/api/tasks`, {
+      method: "GET",
+      headers: { "X-SAG-Token": token },
+      signal: controller.signal
+    });
+    const text = await response.text();
+    let payload = null;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = null;
+    }
+    if (!response.ok) {
+      return { ok: false, tasks: [], reason: `http_${response.status}`, status: response.status };
+    }
+    const tasks = Array.isArray(payload?.tasks) ? payload.tasks : [];
+    return { ok: true, tasks, reason: "", status: response.status };
+  } catch (error) {
+    const name = String(error?.name || "");
+    return {
+      ok: false,
+      tasks: [],
+      reason: name === "AbortError" ? "timeout" : `network: ${safeDetail(error?.message || error)}`,
+      status: 0
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * TASK-167：取主动问候判定。
+ * POST /api/proactive {lastInteractAt[, force]} → {due,dormant,question,nextDueAt}。
+ * 生成可能较慢，超时放宽到 15 秒。
+ * 返回 { ok: boolean, payload: Object|null, reason: string, status: number }。
+ */
+export async function fetchPiProactive(
+  env,
+  token,
+  lastInteractAt,
+  force = false,
+  { fetchImpl = fetch, timeoutMs = 15000 } = {}
+) {
+  if (!token) return { ok: false, payload: null, reason: "no_token", status: 0 };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const body = { lastInteractAt: Number(lastInteractAt) || Date.now() };
+    if (force) body.force = true;
+    const response = await fetchImpl(`${piBase(env)}/api/proactive`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-SAG-Token": token },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    const text = await response.text();
+    let payload = null;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = null;
+    }
+    if (!response.ok) {
+      return { ok: false, payload: null, reason: `http_${response.status}`, status: response.status };
+    }
+    if (!payload || typeof payload !== "object") {
+      return { ok: false, payload: null, reason: "bad_payload", status: response.status };
+    }
+    return { ok: true, payload, reason: "", status: response.status };
+  } catch (error) {
+    const name = String(error?.name || "");
+    return {
+      ok: false,
+      payload: null,
+      reason: name === "AbortError" ? "timeout" : `network: ${safeDetail(error?.message || error)}`,
+      status: 0
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * 上报会话结束（异步生成，202 即成功）。
  * 返回 HTTP 状态码；0 表示网络失败/超时。
  */

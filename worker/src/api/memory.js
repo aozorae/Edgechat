@@ -2,7 +2,13 @@ import { authMiddleware } from "../middleware.js";
 import { errorResponse, parseJsonRequest } from "../utils.js";
 import { getMemoryAccount, readMemoryToken } from "../integrations/memory/accounts.js";
 import { ensureMemoryAccount } from "../integrations/memory/trial-register.js";
-import { fetchSessionOpening, reportSessionEnded } from "../integrations/memory/pi-client.js";
+import {
+  fetchSessionOpening,
+  reportSessionEnded,
+  submitPiTask,
+  fetchPiTasks,
+  fetchPiProactive
+} from "../integrations/memory/pi-client.js";
 import { settleTextSession } from "../integrations/memory/text-session.js";
 import { fetchMemoryContext } from "../integrations/memory/v2-query.js";
 
@@ -13,6 +19,9 @@ import { fetchMemoryContext } from "../integrations/memory/v2-query.js";
  * - GET  /api/v1/memory/session/opening      服务端代取开场摘要（拿不到令牌时先懒补开）
  * - POST /api/v1/memory/voice-session/ended  服务端代报语音会话结束（一律 202）
  * - GET  /api/v1/memory/query?q=             服务端代调 V2 记忆库（端上不再手填令牌）
+ * - POST /api/v1/memory/pi/task              服务端代提交派师傅任务（body {kind, params} → {ok, id}）
+ * - GET  /api/v1/memory/pi/tasks             服务端代拉派师傅任务列表（原样透传 {tasks:[...]}）
+ * - GET  /api/v1/memory/pi/proactive?lastInteractAt=&force=  服务端代取主动问候判定
  * - GET  /api/admin/memory/account?userId=   管理员只读台账状态（不含令牌）
  *
  * 安全：任何响应都不返回令牌明文；只回 has_account / customer_id / status。
@@ -127,6 +136,65 @@ export function registerMemoryRoutes(app) {
     }
     return c.json({ available: true, ...result.payload }, 200);
   });
+  // ============ TASK-167：派师傅任务代理（端上不持令牌，一律由 worker 代调） ============
+
+  // 提交派师傅任务：body {kind, params}；kind = ask/search/patrol，缺省 ask
+  app.post("/api/v1/memory/pi/task", authMiddleware, async (c) => {
+    const session = c.get("session");
+    const userId = Number(session.userId);
+    const payload = await parseJsonRequest(c.req.raw);
+    const kind = String(payload.kind || "ask");
+    const params = payload.params && typeof payload.params === "object" ? payload.params : {};
+    if (!["ask", "search", "patrol"].includes(kind)) {
+      return errorResponse("kind 必须是 ask / search / patrol", 400);
+    }
+    const { token, account } = await readTokenWithLazyOpen(c.env, userId);
+    if (!token) {
+      const state = memoryState(account);
+      return c.json({ ok: false, id: "", reason: state.status }, 200);
+    }
+    const result = await submitPiTask(c.env, token.token, kind, params);
+    if (!result.ok) {
+      return c.json({ ok: false, id: "", reason: result.reason }, 200);
+    }
+    return c.json({ ok: true, id: result.id }, 200);
+  });
+
+  // 拉取派师傅任务列表：GET /api/tasks 的 tasks 数组原样透传
+  app.get("/api/v1/memory/pi/tasks", authMiddleware, async (c) => {
+    const session = c.get("session");
+    const userId = Number(session.userId);
+    const { token, account } = await readTokenWithLazyOpen(c.env, userId);
+    if (!token) {
+      const state = memoryState(account);
+      return c.json({ tasks: [], available: false, reason: state.status }, 200);
+    }
+    const result = await fetchPiTasks(c.env, token.token);
+    if (!result.ok) {
+      return c.json({ tasks: [], available: false, reason: result.reason }, 200);
+    }
+    return c.json({ tasks: result.tasks }, 200);
+  });
+
+  // 主动问候判定：?lastInteractAt=&force=（force 仅识别 "1"/"true"）
+  app.get("/api/v1/memory/pi/proactive", authMiddleware, async (c) => {
+    const session = c.get("session");
+    const userId = Number(session.userId);
+    const lastInteractAt = Number(c.req.query("lastInteractAt")) || Date.now();
+    const forceRaw = String(c.req.query("force") || "");
+    const force = forceRaw === "1" || forceRaw.toLowerCase() === "true";
+    const { token, account } = await readTokenWithLazyOpen(c.env, userId);
+    if (!token) {
+      const state = memoryState(account);
+      return c.json({ available: false, reason: state.status }, 200);
+    }
+    const result = await fetchPiProactive(c.env, token.token, lastInteractAt, force);
+    if (!result.ok) {
+      return c.json({ available: false, reason: result.reason }, 200);
+    }
+    return c.json({ available: true, ...result.payload }, 200);
+  });
+
   app.post("/api/v1/memory/text-session/ended", authMiddleware, async (c) => {
     const session = c.get("session");
     const payload = await parseJsonRequest(c.req.raw);
