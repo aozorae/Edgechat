@@ -9,6 +9,7 @@ import {
   fetchPiTasks,
   fetchPiProactive
 } from "../integrations/memory/pi-client.js";
+import { normalizeIngestBatch, postIngest } from "../integrations/memory/ingest-client.js";
 import { settleTextSession } from "../integrations/memory/text-session.js";
 import { fetchMemoryContext } from "../integrations/memory/v2-query.js";
 
@@ -22,6 +23,7 @@ import { fetchMemoryContext } from "../integrations/memory/v2-query.js";
  * - POST /api/v1/memory/pi/task              服务端代提交派师傅任务（body {kind, params} → {ok, id}）
  * - GET  /api/v1/memory/pi/tasks             服务端代拉派师傅任务列表（原样透传 {tasks:[...]}）
  * - GET  /api/v1/memory/pi/proactive?lastInteractAt=&force=  服务端代取主动问候判定
+ * - POST /api/v1/memory/ingest              服务端代报采集事件（body {events:[…],batchId?}，上限 50 条/批）
  * - GET  /api/admin/memory/account?userId=   管理员只读台账状态（不含令牌）
  *
  * 安全：任何响应都不返回令牌明文；只回 has_account / customer_id / status。
@@ -248,6 +250,33 @@ export function registerMemoryRoutes(app) {
 
     // 客户端只需要知道"收到了"：失败一律 202（异步语义），状态码只在服务端日志/台账里
     return c.json({ ok: true, accepted: true, status: result.status }, 202);
+  });
+
+  // B 案：采集事件摄取代理。端上不持任何记忆钥匙（鉴权走自家会话 Bearer），
+  // worker 取库内密文令牌代调 SAG POST /ingest。采集开关 / 白名单判定在端上，这里不做默认开关。
+  app.post("/api/v1/memory/ingest", authMiddleware, async (c) => {
+    const session = c.get("session");
+    const userId = Number(session.userId);
+    const payload = await parseJsonRequest(c.req.raw);
+
+    const batch = await normalizeIngestBatch(payload?.events, payload?.batchId);
+    if (!batch.ok) return errorResponse(batch.reason, 400);
+
+    const token = await readMemoryToken(c.env, userId);
+    if (!token) {
+      // 摄取是高频链路，这里不做懒补开：缺令牌就让端上把这批留在 outbox 里补发，别每条都白等一次超时
+      const account = await getMemoryAccount(c.env.DB, userId);
+      const state = memoryState(account);
+      return c.json({ ok: false, reason: state.memoried ? "token_unavailable" : state.status }, 502);
+    }
+
+    const result = await postIngest(c.env, token.token, batch.events, { batchId: batch.batchId });
+    if (!result.ok) {
+      // SAG 失败一律 502，端上据非 2xx 攒批重试；令牌/正文都不回传
+      return c.json({ ok: false, reason: result.reason }, 502);
+    }
+
+    return c.json({ ok: true, accepted: result.accepted, skipped: batch.skipped, batchId: batch.batchId }, 200);
   });
 }
 
