@@ -708,6 +708,30 @@ CREATE TABLE IF NOT EXISTS text_session_reports (
 CREATE INDEX IF NOT EXISTS idx_text_session_reports_user
   ON text_session_reports(user_id, reported_at);
 
+-- [打招呼制社交 2026-11-01] 默认互不可见；打招呼→点头→互见可聊（迁移 2026-11-01-greet-contacts）
+CREATE TABLE IF NOT EXISTS greet_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_user INTEGER NOT NULL,
+  to_user INTEGER NOT NULL,
+  message TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'declined')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  responded_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_greet_pending_by_to
+  ON greet_requests(to_user, status);
+CREATE INDEX IF NOT EXISTS idx_greet_by_from
+  ON greet_requests(from_user, status);
+
+CREATE TABLE IF NOT EXISTS greet_contacts (
+  a INTEGER NOT NULL,
+  b INTEGER NOT NULL,
+  established_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (a, b),
+  CHECK (a < b)
+);
+
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value)
 VALUES ('site_name', 'Edgechat');
 
