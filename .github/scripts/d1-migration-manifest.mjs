@@ -267,6 +267,17 @@ export const D1_MIGRATIONS = [
     ],
     rerunnable: true,
   },
+  {
+    id: "2026-11-01-greet-contacts",
+    file: "worker/migrations/2026-11-01-greet-contacts.sql",
+    artifacts: [
+      "table:greet_requests",
+      "table:greet_contacts",
+      "index:idx_greet_pending_by_to",
+      "index:idx_greet_by_from",
+    ],
+    rerunnable: true,
+  },
 ];
 
 // b3f6855 曾发布、0c13e8f 已撤回的迁移：仅识别历史 ledger，不要求新安装创建废弃表，也不删除旧数据。

@@ -36,6 +36,8 @@ import { InstanceBridge } from './do/InstanceBridge.ts';
 import { rescueBridgeDeliveries } from './integrations/instance-bridge/delivery.ts';
 import { registerChannelRoutes } from './api/channels.js';
 import { registerContactRoutes } from './api/contacts.ts';
+import { registerGreetRoutes } from './api/greet.js';
+import { listVisibleUsers } from './data/social.js';
 import { registerLoginNetworkRoutes } from './api/login-network.ts';
 import { registerDmRoutes } from './api/dm.js';
 import { registerCallRoutes } from './api/calls.ts';
@@ -292,8 +294,9 @@ app.get('/api/users', async (c) => {
 app.get('/api/bootstrap', async (c) => {
   const session = c.get('session');
   await ensureGeneralChannelMembership(c.env.DB, session.userId);
+  // [打招呼制 2026-11-01] 目录只回官方号+互认联系人（默认互不可见）；旧 /api/contacts 全量留给后台
   const [users, channels, dms] = await Promise.all([
-    listActiveUsers(c.env.DB, session.userId),
+    listVisibleUsers(c.env.DB, session.userId),
     listVisibleChannels(c.env.DB, session.userId),
     listUserDms(c.env.DB, session.userId)
   ]);
@@ -305,6 +308,7 @@ app.use('/api/admin/*', adminMiddleware);
 
 registerMessageRoutes(app);
 registerContactRoutes(app);
+registerGreetRoutes(app);
 registerDmRoutes(app);
 registerCallRoutes(app);
 registerUserBlockRoutes(app);
