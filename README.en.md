@@ -189,6 +189,8 @@ See [TECHNICAL.md](TECHNICAL.md) for more implementation details.
 
 ### Automatic Deployment with GitHub Actions
 
+Forgot the administrator password? Update the repository's `EDGECHAT_ADMIN_PASSWORD` Secret and rerun `00 Deploy Worker`. Every deployment uses that Secret: a changed password invalidates old sessions, while an unchanged password preserves them. It never promotes or unbans accounts. See [administrator setup and recovery](docs/admin-bootstrap.md#english).
+
 Messages are retained for **30 days** by default, then automatically deleted in batches by daily cleanup. Set `MESSAGE_RETENTION_DAYS` to customize this period. Existing explicit settings remain effective after upgrades; deleted messages cannot be restored.
 
 Using the GitHub Actions workflow included in the repository is recommended for deployment and subsequent updates. `Sync Upstream` checks twice daily, merges upstream releases marked with the `EdgeChat-Update: stable` / `security` commit trailer, and explicitly dispatches deployment. See the [update guide](https://echat.azora.top/en/guide/updating-fork) for setup and token permissions, and the [deployment guide](https://echat.azora.top/en/guide/actions-deploy) for `MESSAGE_RETENTION_DAYS`.

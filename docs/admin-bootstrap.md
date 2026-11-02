@@ -1,4 +1,4 @@
-# 首次管理员初始化 / First Administrator Setup
+# 管理员初始化与密码恢复 / Administrator Setup and Password Recovery
 
 ## 中文
 
@@ -17,6 +17,10 @@
 旧的 `CFCHAT_ADMIN_*` 名称仍兼容，新名称优先。重新运行 `Actions -> 00 Deploy Worker -> Run workflow`，账号初始化成功后，使用上述用户名和密码登录。首次漏配无需重新建库或重复导入 schema。
 
 已有可登录超管时，更新不要求再次提供初始化凭据。只配置用户名或密码其中一项会报错；初始化后仍无有效超管，也会停止发布并给出配置提示。
+
+**从 `2.20.2` 起，每次 Actions 部署都以当前配置的密码为准。** 忘记密码时，只需把 `EDGECHAT_ADMIN_PASSWORD` Repository Secret 改成新密码，保留对应的 `EDGECHAT_ADMIN_USERNAME`，再运行 `00 Deploy Worker`。同步成功后用新密码登录，无需手动执行 SQL 或重建数据库。这是 GitHub Actions Secret，不是在 Cloudflare 面板添加同名 Worker 变量；它不会作为明文运行时变量发布。
+
+已有超管密码相同时不写库、不影响会话；密码不同时只更新密码并使该账号旧会话失效，保留显示名、权限和分组。若在站内改密，也应更新 Secret，否则下次部署会恢复为 Secret 中的密码；不再需要部署同步时，成对删除用户名和密码 Secrets 即可。`EDGECHAT_ADMIN_DISPLAY_NAME` 仅用于创建新账号。
 
 ### 手动部署：SQL 已执行，但无法首次登录
 
@@ -58,7 +62,7 @@ fi
 
 ### 已有同名账号或忘记密码
 
-初始化脚本**只创建不存在的账号**，重复运行不会重置密码、授予已有普通账号超管身份、解封或恢复已删除账号。修改 Repository Secret 也不会修改已有账号密码。忘记密码或同名普通账号已存在时，请按 [显式超管恢复说明](rbac.md#升级与恢复) 先备份并确认目标，再执行恢复工具；不要清空数据库或开放匿名初始化接口。
+手动 `admin:bootstrap` 脚本仍然**只创建不存在的账号**。Actions 会同步同名、可登录的已有超级管理员密码，但不会授予普通账号超管身份、解封或恢复已删除账号；遇到这些情况会停止部署。此时请按 [显式超管恢复说明](rbac.md#升级与恢复) 先备份并确认目标，再执行恢复工具；不要清空数据库或开放匿名初始化接口。
 
 ## English
 
@@ -69,6 +73,10 @@ fi
 Add `EDGECHAT_ADMIN_USERNAME` (your chosen name, such as `admin`) and `EDGECHAT_ADMIN_PASSWORD` (your own strong password) as Repository Secrets under `Settings -> Secrets and variables -> Actions -> Secrets`. `EDGECHAT_ADMIN_DISPLAY_NAME` is optional. Legacy `CFCHAT_ADMIN_*` names remain supported; new names take precedence.
 
 Run `Actions -> 00 Deploy Worker -> Run workflow` again, then sign in with these credentials. Missing initial credentials do not require recreating the database. Later updates can omit them if an active super administrator already exists. Providing only one credential, or having no active super administrator after initialization, stops deployment with an actionable error.
+
+**Since `2.20.2`, every Actions deployment uses the currently configured password.** To recover a forgotten password, update the `EDGECHAT_ADMIN_PASSWORD` Repository Secret, keep the matching `EDGECHAT_ADMIN_USERNAME`, and run `00 Deploy Worker` again. Sign in with the new password after sync succeeds; no manual SQL or database reset is needed. Configure GitHub Actions Secrets, not same-named Worker runtime variables in Cloudflare; the plaintext password is not deployed as a runtime variable.
+
+An unchanged password leaves the database and sessions untouched. A changed password invalidates that account's old sessions without changing its profile, permissions, or group. After changing the password in the site, also update the Secret or the next deployment will restore the Secret's password. Remove both credential Secrets to stop deployment-time sync. `EDGECHAT_ADMIN_DISPLAY_NAME` applies only when creating an account.
 
 ### Manual Deployment
 
@@ -86,4 +94,4 @@ If the website is already deployed, sign in immediately after applying the SQL; 
 
 ### Existing Accounts and Recovery
 
-Initialization never overwrites an existing account's password, permissions, ban state, deletion state or role. Updating Repository Secrets is not a password reset. For an existing account or lost administrator password, back up the database and follow the explicit recovery procedure in [RBAC maintenance](rbac.md). Do not empty the database or expose anonymous administrator setup.
+Manual `admin:bootstrap` still creates missing accounts only. Actions synchronizes passwords only for an existing active super administrator; it never promotes ordinary accounts, unbans users, or restores deleted accounts. Such conflicts stop deployment. For those cases, back up the database and follow the explicit recovery procedure in [RBAC maintenance](rbac.md). Do not empty the database or expose anonymous administrator setup.

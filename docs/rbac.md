@@ -43,7 +43,7 @@ node .github/scripts/prepare-d1-migrations.mjs --verify
 npm run deploy
 ```
 
-管理员初始化只在账号不存在时创建；相同用户名已存在时不改密码、身份、封禁或分组。没有有效超管时，部署者先备份并确认恢复目标为自己的账号，通过环境变量提供已有用户 ID 和新密码：
+手动管理员初始化只在账号不存在时创建。Actions 从 `2.20.2` 起会以当前 `EDGECHAT_ADMIN_PASSWORD` Secret 同步同名有效超管密码；忘记密码时更新 Secret 并重新运行部署即可，详见[管理员密码恢复](admin-bootstrap.md)。不会自动提权、解封或恢复已删除账号。需要恢复身份或账号状态时，部署者先备份并确认恢复目标为自己的账号，通过环境变量提供已有用户 ID 和新密码：
 
 ```bash
 node .github/scripts/generate-admin-recovery-sql.mjs --confirm-super-admin-recovery

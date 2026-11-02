@@ -180,6 +180,8 @@ GitHub Actions はサーバーサイド暗号化の Worker Secrets を管理し�
 
 ### GitHub Actions による自動デプロイ
 
+管理者パスワードを忘れた場合は、リポジトリの `EDGECHAT_ADMIN_PASSWORD` Secret を更新して `00 Deploy Worker` を再実行してください。毎回のデプロイでは Secret の値が優先され、変更時のみ旧セッションが無効になります。同じパスワードならセッションは維持され、権限昇格や凍結解除は行いません。[設定と復旧](docs/admin-bootstrap.md#english)を参照してください。
+
 メッセージの既定保持期間は **30 日間**です。期限を過ぎると毎日の定期処理で順次自動削除されます。`MESSAGE_RETENTION_DAYS` で変更でき、明示的な既存設定はアップグレード後も維持されます。削除済みメッセージは復元できません。
 
 デプロイとその後の更新には、リポジトリに組み込まれた GitHub Actions ワークフローの利用を推奨します。`Sync Upstream` は毎日 2 回確認し、コミット末尾の `EdgeChat-Update: stable` / `security` が付いた上流リリースをマージして明示的にデプロイを起動します。初回設定とトークン権限は[更新ガイド](https://echat.azora.top/en/guide/updating-fork)、`MESSAGE_RETENTION_DAYS` は[デプロイガイド](https://echat.azora.top/en/guide/actions-deploy)を参照してください。
