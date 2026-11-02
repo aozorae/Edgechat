@@ -258,6 +258,11 @@ async function handleDemoRequest(path, options = {}) {
   if (pathname.startsWith('/admin/')) authorizeDemoAdmin(pathname, method, body);
   const rbac = demoRbac(pathname, method, body, Number(url.searchParams.get('offset') || 0));
   if (rbac) return rbac;
+  if (pathname === '/auth/verification') return { enabled: false, siteKey: '' };
+  if (pathname === '/admin/login-verification') {
+    if (method === 'PUT') demoState.loginVerification = { enabled: body.enabled, siteKey: body.siteKey };
+    return { enabled: false, siteKey: '', ...demoState.loginVerification, secretConfigured: true };
+  }
   if (pathname === '/admin/stealth') {
     if (method === 'PUT') demoState.stealthEnabled = body.enabled === true;
     return { enabled: demoState.stealthEnabled === true };

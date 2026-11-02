@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import initSqlJs from "sql.js";
-import { encryptSecretValue } from "../../encryption.js";
+import { encryptMessageContent, encryptSecretValue } from "../../encryption.js";
 import {
 	consumeTelegramNotificationLink,
 	createTelegramNotificationLink,
@@ -86,13 +86,21 @@ test("Telegram binding is private, single-use, and notification deliveries dedup
 	};
 	try {
 		const room = { id: 17, name: "Secret room", kind: "dm" };
-		const message = { id: 21, content: "Do not send this message body" };
+		const message = { id: 21, content: "Readable <b>message</b> & https://example.com" };
+		db.run("INSERT INTO channels (id, kind, name, dm_key) VALUES (17, 'dm', 'DM', '1:2')");
+		db.run("INSERT INTO channel_members (channel_id, user_id) VALUES (17, 1), (17, 2)");
+		db.run("INSERT INTO messages (id, channel_id, sender_id, content) VALUES (21, 17, 2, ?)",
+			[await encryptMessageContent(env, message.content, { channelId: 17, senderId: 2 })]);
 		await enqueueTelegramNotification(env, { userId: 1, senderId: 2, room, message, kind: "dm" });
 		assert.equal(sent.length, 0);
 		db.run("UPDATE telegram_notification_outbox SET next_attempt_at = datetime('now', '-1 minute')");
 		await deliverTelegramNotification(env);
 		assert.equal(sent.length, 1);
-		assert.doesNotMatch(sent[0].text, /Do not send/);
+		assert.ok(sent[0].text.includes("Readable…"));
+		assert.ok(!sent[0].text.includes(message.content));
+		assert.equal(sent[0].parse_mode, undefined);
+		assert.equal(sent[0].link_preview_options.is_disabled, true);
+		assert.ok(sent[0].reply_markup.keyboard[0][0].text.includes("Bob"));
 		await enqueueTelegramNotification(env, { userId: 1, senderId: 2, room, message, kind: "dm" });
 		assert.equal(sent.length, 1);
 		fail = false;

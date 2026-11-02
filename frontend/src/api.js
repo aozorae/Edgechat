@@ -59,6 +59,11 @@ async function request(path, options = {}) {
 }
 
 export default {
+  loginVerification() { return request('/auth/verification'); },
+  adminLoginVerification() { return request('/admin/login-verification'); },
+  saveAdminLoginVerification(body) {
+    return request('/admin/login-verification', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body });
+  },
   authorization() { return request('/me/authorization'); },
   rbacRoles(offset = 0) { return request(`/admin/rbac/roles?offset=${offset}`); },
   rbacPermissions() { return request('/admin/rbac/permissions'); },

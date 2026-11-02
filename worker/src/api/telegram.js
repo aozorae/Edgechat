@@ -18,6 +18,7 @@ import {
 } from "../integrations/telegram/client.js";
 import { ingestTelegramMessage } from "../integrations/telegram/bridge.js";
 import { parseTelegramMessageUpdate } from "../integrations/telegram/parser.js";
+import { handleTelegramDirectMessage, telegramMenu } from "../integrations/telegram/direct-messages.ts";
 import {
 	consumeTelegramNotificationLink,
 	createTelegramNotificationLink,
@@ -116,11 +117,15 @@ export function registerTelegramPublicRoutes(app) {
 			c.executionCtx.waitUntil(
 				sendTelegramText(credentials.botToken, {
 					chatId: update.message.chat.id,
-					text: "EdgeChat 通知已绑定。你可以在 EdgeChat 的设置中管理提醒。",
+					text: "EdgeChat 已绑定。通知将显示消息正文；点击「私聊列表」可直接发送站内私聊。你可以在 EdgeChat 设置中关闭提醒或解绑。",
 					parseMode: null,
+					replyMarkup: telegramMenu,
 					timeoutMs: 5000,
 				}).catch(() => {}),
 			);
+			return c.json({ ok: true });
+		}
+		if (await handleTelegramDirectMessage(c.env, credentials.botToken, update?.message)) {
 			return c.json({ ok: true });
 		}
 		const telegramMessage = parseTelegramMessageUpdate(update);

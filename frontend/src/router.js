@@ -38,6 +38,10 @@ const router = createRouter({
       meta: { admin: true, transition: 'page' },
       children: [
         {
+          path: 'login-verification', name: 'admin-login-verification', component: () => import('./pages/AdminLoginVerificationPage.vue'),
+          meta: { admin: true, adminTitleKey: 'verification.title', adminIcon: 'login-verification', transition: 'page' }
+        },
+        {
           path: 'rbac', name: 'admin-rbac', component: () => import('./pages/AdminRbacPage.vue'),
           meta: { admin: true, adminTitleKey: 'rbac.title', adminIcon: 'rbac', transition: 'page' }
         },

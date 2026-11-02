@@ -9,7 +9,7 @@ command = "npm run schema:generate"
 
 [vars]
 ADMIN_USERNAMES = "admin"
-MESSAGE_RETENTION_DAYS = "15"
+MESSAGE_RETENTION_DAYS = "30"
 SOFT_DELETE_RETENTION_DAYS = "60"
 GC_BATCH_SIZE = "90"
 GC_MAX_BATCHES_PER_RUN = "20"
@@ -23,6 +23,17 @@ R2_DELETE_MAX_RETRY = "8"
 ORPHAN_UPLOAD_RETENTION_DAYS = "1"
 ALLOWED_FILE_TYPES = "image/,video/,audio/,application/pdf,text/"
 MAX_FILE_SIZE = "20971520"
+
+# 原生边缘计数不写 D1/KV；相同账户的其他应用应使用不同 namespace_id。
+[[ratelimits]]
+name = "LOGIN_RATE_LIMITER"
+namespace_id = "218401"
+simple = { limit = 10, period = 60 }
+
+[[ratelimits]]
+name = "API_RATE_LIMITER"
+namespace_id = "218402"
+simple = { limit = 120, period = 60 }
 
 [[d1_databases]]
 binding = "DB"

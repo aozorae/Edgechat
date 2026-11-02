@@ -273,6 +273,11 @@ export const D1_MIGRATIONS = [
     rerunnable: true,
   },
   {
+    id: "2026-10-31-telegram-direct-messages",
+    file: "worker/migrations/2026-10-31-telegram-direct-messages.sql",
+    artifacts: ["table:telegram_dm_prompts", "trigger:clear_telegram_prompt_after_rebind"],
+  },
+  {
     id: "2026-11-01-greet-contacts",
     file: "worker/migrations/2026-11-01-greet-contacts.sql",
     artifacts: [

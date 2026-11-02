@@ -49,7 +49,7 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 }
 
-export function renderGate(settings: { loginPath: string; formId: string; appearance: GateAppearance }, failed: boolean) {
+export function renderGate(settings: { loginPath: string; formId: string; appearance: GateAppearance }, failed: boolean, siteKey = '', nonce = '') {
   const a = settings.appearance;
   const text = wording[a.wording];
   const color = palettes[a.palette];
@@ -80,7 +80,8 @@ export function renderGate(settings: { loginPath: string; formId: string; appear
     `<div class="${notice}" role="alert"><p>${text.error}</p></div>`,
     `<aside class="${notice}" role="alert">${text.error}</aside>`,
   ][a.notice] : '';
-  const form = `<form action="${escapeHtml(settings.loginPath)}" method="post">${row(false)}${row(true)}${action}</form>`;
+  const verification = siteKey ? `<div id="verification" data-sitekey="${escapeHtml(siteKey)}"></div><p id="verification-error" role="alert" hidden>Verification failed. Please try again.</p>` : '';
+  const form = `<form action="${escapeHtml(settings.loginPath)}" method="post">${row(false)}${row(true)}${verification}${action}</form>`;
   const content = heading + form + message;
   const body = [
     `<main id="${escapeHtml(settings.formId)}" class="${panel}">${content}</main>`,
@@ -97,5 +98,30 @@ export function renderGate(settings: { loginPath: string; formId: string; appear
   ];
   // Emit only selected templates. The saved order also avoids a single fixed style-block prefix.
   const css = [...styles.slice(a.order), ...styles.slice(0, a.order)].join('\n');
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${text.title}</title><style>${css}</style></head><body>${body}</body></html>`;
+  // 仅启用验证时加载外部脚本；每次提交后才执行挑战，不预先获取并复用 token。
+  const script = siteKey ? `<script nonce="${nonce}">
+    const form = document.querySelector('form');
+    const button = form.querySelector('button');
+    const container = document.getElementById('verification');
+    const error = document.getElementById('verification-error');
+    let widget;
+    window.onGateTurnstile = () => { button.disabled = false; };
+    button.disabled = true;
+    setTimeout(() => { if (!window.turnstile) { button.disabled = false; error.hidden = false; } }, 15000);
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (button.disabled) return;
+      if (!window.turnstile) { error.hidden = false; return; }
+      button.disabled = true;
+      error.hidden = true;
+      if (widget !== undefined) turnstile.remove(widget);
+      const failed = () => { button.disabled = false; error.hidden = false; };
+      widget = turnstile.render(container, {
+        sitekey: container.dataset.sitekey, action: 'login', execution: 'execute', size: 'compact', retry: 'never',
+        callback: () => form.submit(), 'error-callback': failed, 'expired-callback': failed, 'timeout-callback': failed
+      });
+      turnstile.execute(widget);
+    });
+  </script><script nonce="${nonce}" src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=onGateTurnstile" async defer></script>` : '';
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${text.title}</title><style>${css}</style></head><body>${body}${script}</body></html>`;
 }

@@ -1,4 +1,9 @@
 const fixedErrorTranslations = new Map([
+  ['请求过于频繁，请稍后重试', 'Too many requests. Please try again later.'],
+  ['登录验证暂不可用', 'Login verification is temporarily unavailable.'],
+  ['请完成登录验证', 'Please complete login verification.'],
+  ['登录验证失败，请重试', 'Login verification failed. Please try again.'],
+  ['请先配置 Turnstile Site Key 和 Secret Key', 'Configure the Turnstile Site Key and Secret Key first.'],
   ["无效的私聊", "Invalid direct conversation"],
   ["仅私聊双方可以通话", "Only the two DM participants can call"],
   ["拉黑状态下无法通话", "Calls are unavailable while either participant is blocked"],

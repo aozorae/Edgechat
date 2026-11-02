@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import api from '../api.js';
 import store from '../store.js';
 import TelegramNotificationSettings from '../components/settings/TelegramNotificationSettings.vue';
+import VisualEffectsSettings from '../components/settings/VisualEffectsSettings.vue';
 import UiAvatar from '../components/ui/Avatar.vue';
 import LanguageSwitch from '../components/ui/LanguageSwitch.vue';
 import { isCapacitorAndroid, pickNativeFile } from '../capacitor-platform.ts';
@@ -405,6 +406,7 @@ async function changePassword() {
             {{ savingPassword ? t('settings.updatingPassword') : t('settings.updatePassword') }}
           </button>
         </section>
+        <VisualEffectsSettings class="settings-section" />
         <TelegramNotificationSettings class="settings-section" />
       </div>
 

@@ -14,12 +14,16 @@ import './styles/tokens.css';
 import './styles/layout.css';
 import './styles/ui.css';
 import './styles/color-themes.css';
-import { initLiquidGlass } from './liquid-glass.js';
+import './styles/visual-effects.css';
+import { initLiquidGlass } from './liquid-glass.ts';
+import { initVisualEffects } from './visual-effects.ts';
 import { initializeI18n } from './i18n.js';
 import { parseNotificationRoomTarget, takeNotificationRoomTarget } from './notification-target.js';
 import { installChunkLoadRecovery } from './chunk-load.ts';
 
 installChunkLoadRecovery(window);
+// 挂载页面前应用偏好，避免低特效用户先看到一帧完整玻璃效果。
+const disposeVisualEffects = initVisualEffects();
 
 // 点击通知后新打开的窗口从 URL 恢复会话；登录后聊天页也能消费这个目标。
 const isCapacitorNative = Capacitor.isNativePlatform();
@@ -55,6 +59,11 @@ if (customBg) {
 initializeI18n().finally(() => {
   void store.initialize();
   const app = createApp(App);
+  const disposeLiquidGlass = initLiquidGlass();
+  app.onUnmount(() => {
+    disposeLiquidGlass();
+    disposeVisualEffects();
+  });
   app.use(router);
   app.mount('#app');
   if (typeof document.modelContext?.registerTool === 'function') {
@@ -69,6 +78,4 @@ initializeI18n().finally(() => {
     }
   });
 
-  // 初始化 Liquid Glass 效果
-  setTimeout(initLiquidGlass, 100);
 });

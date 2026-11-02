@@ -1,0 +1,48 @@
+/* JS 初始化前也尊重系统偏好，避免全屏模糊光团先绘制后隐藏。 */
+@media (prefers-reduced-motion: reduce), (prefers-reduced-transparency: reduce) {
+  body::before,
+  body::after {
+    display: none;
+  }
+}
+
+/* 显式降级覆盖按需加载的组件及 Teleport 弹层，避免漏掉局部硬编码的背景滤镜。 */
+html[data-effects="low"] *,
+html[data-effects="low"] *::before,
+html[data-effects="low"] *::after {
+  /* biome-ignore lint/complexity/noImportantStyles: 用户主动关闭特效必须覆盖按需组件和内联滤镜。 */
+  -webkit-backdrop-filter: none !important;
+  /* biome-ignore lint/complexity/noImportantStyles: 与 WebKit 属性一致，保证降级不受组件选择器优先级影响。 */
+  backdrop-filter: none !important;
+}
+
+html[data-effects="low"] body::before,
+html[data-effects="low"] body::after,
+html[data-effects="low"] .liquid-glass-specular,
+html[data-effects="low"] .liquid-glass-panel::before,
+html[data-effects="low"] .app-window::before,
+html[data-effects="low"] .chat-bubble::after,
+html[data-effects="low"] .ui-surface::after {
+  display: none;
+}
+
+/* 大面板使用主题底色承接内容；保留消息、状态色与用户自定义背景。 */
+html[data-effects="low"] :is(.app-window, .chat-app, .page-card, .liquid-glass-panel) {
+  background: var(--bg, #f5f7fa);
+}
+
+html[data-effects="low"] .liquid-glass-panel {
+  transition: none;
+}
+
+/* 不停用加载指示器；仅缩短进出场动画，让其最终状态与 Vue 过渡钩子仍能完成。 */
+html[data-effects="low"] :is(.login-page, .register-page)::before,
+html[data-effects="low"] .enter-fade-up {
+  animation-duration: 0.01ms;
+  animation-delay: 0s;
+}
+
+html[data-effects="low"] :is(.page-enter-active, .page-leave-active) {
+  transition-duration: 0.01ms;
+}
+

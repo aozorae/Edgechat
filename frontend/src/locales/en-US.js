@@ -2,7 +2,9 @@ import maintenanceEn from './maintenance/en-US.js';
 import bridge from './instance-bridge/en-US.js';
 
 import rbac from './rbac/en-US.js';
+import verification from './login-verification/en-US.js';
 export default {
+  ...verification,
   ...rbac,
   'call.limit': 'The one-hour call limit was reached. Please call again.',
   'call.voice': 'Voice call',
@@ -116,11 +118,15 @@ export default {
   'settings.displayNameHint': 'Shown to other users',
   'settings.customBackground': 'Custom background',
   'settings.customBackgroundHint': 'CSS gradient, solid color, or image URL',
+  'settings.effectsTitle': 'Visual effects',
+  'settings.lowEffects': 'Low-effects mode',
+  'settings.lowEffectsHint': 'Disable background orbs, glass highlights and backdrop blur. Applies immediately in this browser only; chat features stay unchanged.',
+  'settings.systemLowEffects': 'Your system requests reduced motion or transparency, so low-effects mode is active automatically.',
   'settings.savingProfile': 'Saving',
   'settings.saveProfile': 'Save profile',
   'settings.securitySection': 'Security',
   'settings.telegramTitle': 'Telegram notifications',
-  'settings.telegramDescription': 'Get alerts for direct messages and group mentions while EdgeChat is closed. Message content is not sent.',
+  'settings.telegramDescription': 'DM and mention alerts show only the first 8 characters and an EdgeChat link. Previews still reach Telegram as plaintext; attachment names stay hidden. Bot /chats messaging remains available. Disabling alerts does not disable sending; disconnect to disable both.',
   'settings.telegramStatusLoading': 'Loading',
   'settings.telegramStatusUnavailable': 'Unavailable',
   'settings.telegramStatusDisconnected': 'Not connected',

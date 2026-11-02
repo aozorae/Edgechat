@@ -8,6 +8,8 @@ import LanguageSwitch from '../components/ui/LanguageSwitch.vue';
 import { getStoredNativeServerOrigin, isCapacitorAndroid } from '../capacitor-platform.ts';
 import { readLoginSubmission } from '../login-submission.ts';
 import { loadAuthFonts } from '../auth-fonts.js';
+import api from '../api.js';
+import LoginVerification from '../components/LoginVerification.vue';
 
 onMounted(loadAuthFonts);
 
@@ -16,6 +18,7 @@ const router = useRouter();
 const { t } = useI18n();
 const loading = ref(false);
 const error = ref('');
+const verification = ref(null);
 const form = reactive({
   serverOrigin: getStoredNativeServerOrigin(),
   username: '',
@@ -37,6 +40,7 @@ useCursor([
 ]);
 
 async function submit(event) {
+  if (loading.value) return;
   loading.value = true;
   error.value = '';
   try {
@@ -46,10 +50,12 @@ async function submit(event) {
     if (isCapacitorAndroid) {
       await store.configureNativeServer(serverOrigin);
     }
+    const configuration = await api.loginVerification();
+    if (configuration.enabled) credentials.turnstileToken = await verification.value.verify(configuration.siteKey);
     await store.login(credentials);
     router.push('/');
   } catch (currentError) {
-    error.value = currentError.message === 'native_server_https_required'
+    error.value = currentError.message.startsWith('turnstile_') ? t('verification.failed') : currentError.message === 'native_server_https_required'
       ? t('auth.serverHttpsRequired')
       : currentError.message === 'native_server_unavailable'
         ? t('auth.serverUnavailable')
@@ -113,6 +119,7 @@ async function submit(event) {
           />
         </div>
 
+        <LoginVerification ref="verification" />
         <button class="login-btn" :disabled="loading" type="submit">
           {{ loading ? t('auth.signingIn') : t('auth.signIn') }}
         </button>

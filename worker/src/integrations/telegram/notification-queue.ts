@@ -1,6 +1,7 @@
 import { getTelegramCredentials } from "../../data/telegram.js";
 import { activeUserSql } from "../../user-status.js";
 import { TelegramApiError, sendTelegramText } from "./client.js";
+import { buildTelegramNotification } from "./notification-content.ts";
 
 interface Statement {
   bind(...values: (string | number)[]): Statement;
@@ -86,7 +87,7 @@ export async function deliverTelegramNotification(env: NotificationEnv) {
     SET status = 'sending', attempts = attempts + 1, next_attempt_at = datetime('now', '+5 minutes'), updated_at = CURRENT_TIMESTAMP
     WHERE id IN (SELECT id FROM telegram_notification_outbox WHERE user_id = ? AND kind = ?
       AND status IN ('pending', 'sending') AND attempts < ? AND next_attempt_at <= CURRENT_TIMESTAMP
-      ORDER BY id LIMIT 90) RETURNING id, room_name, attempts`).bind(candidate.user_id, candidate.kind, MAX_ATTEMPTS)
+      ORDER BY id LIMIT 5) RETURNING id, room_name, attempts`).bind(candidate.user_id, candidate.kind, MAX_ATTEMPTS)
     .all<{ id: number; room_name: string; attempts: number }>();
   if (!claimed.length) return;
   await env.DB.prepare(`UPDATE telegram_notification_users SET next_notification_at = datetime('now', '+1 minute')
@@ -96,12 +97,16 @@ export async function deliverTelegramNotification(env: NotificationEnv) {
   try {
     const credentials = await getTelegramCredentials(env);
     if (!credentials) throw new Error("Telegram bot unavailable");
-    const label = candidate.kind === "dm" ? "你收到 EdgeChat 私信提醒" : "你在 EdgeChat 群聊中被 @ 了";
-    const rooms = new Set(claimed.map(row => row.room_name));
-    const summary = rooms.size === 1 ? claimed[0].room_name : `${rooms.size} 个会话`;
-    await sendTelegramText(credentials.botToken, {
-      chatId: candidate.telegram_chat_id, text: `${label}\n${summary}\n打开 EdgeChat 查看`, parseMode: null, timeoutMs: 5000,
+    const notification = await buildTelegramNotification(env, {
+      ids, userId: candidate.user_id, chatId: candidate.telegram_chat_id, kind: candidate.kind,
+      webhookUrl: credentials.webhookUrl,
     });
+    if (notification) {
+      await sendTelegramText(credentials.botToken, {
+        chatId: candidate.telegram_chat_id, ...notification,
+        parseMode: null, disableLinkPreview: true, timeoutMs: 5000,
+      });
+    }
     await env.DB.prepare(`UPDATE telegram_notification_outbox SET status = 'sent', updated_at = CURRENT_TIMESTAMP
       WHERE id IN (${placeholders}) AND status = 'sending'`).bind(...ids).run();
   } catch (error) {

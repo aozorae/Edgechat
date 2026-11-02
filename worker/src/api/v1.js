@@ -1,4 +1,6 @@
 import { verifyPassword } from '../auth.js';
+import { verifyLoginSecurity } from '../login-security.ts';
+import { getLoginVerification } from '../data/login-verification.ts';
 import { saveUploadedFile } from './upload.js';
 import {
   getRoomSyncCursor,
@@ -86,9 +88,10 @@ export function registerV1Routes(app) {
     return c.json({
       apiVersion: 1,
       site,
+      loginVerification: await getLoginVerification(c.env.DB),
       limits: {
         maxUploadBytes: Number(c.env.MAX_FILE_SIZE || 20971520),
-        messageRetentionDays: Number(c.env.MESSAGE_RETENTION_DAYS || 15)
+        messageRetentionDays: Number(c.env.MESSAGE_RETENTION_DAYS || 30)
       },
       features: {
         deviceSessions: true,
@@ -108,6 +111,7 @@ export function registerV1Routes(app) {
     if (!username || !password) {
       return v1ErrorResponse('invalid_credentials', '请输入用户名和密码', 400);
     }
+    await verifyLoginSecurity(c.env, c.req.raw, payload.turnstileToken);
     const user = await getUserByUsername(c.env.DB, username);
     if (
       !user ||

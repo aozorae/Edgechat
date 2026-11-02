@@ -37,7 +37,6 @@ test("Cloudflare 生产凭据只注入实际调用 Cloudflare 的步骤", () => 
 			"Run tests",
 			"Build frontend assets",
 		"Generate wrangler config for CI",
-		"Generate admin bootstrap SQL (optional)",
 	]) {
 		assert.doesNotMatch(getStep(name), /CLOUDFLARE_(?:API_TOKEN|ACCOUNT_ID)/);
 	}
@@ -47,7 +46,7 @@ test("Cloudflare 生产凭据只注入实际调用 Cloudflare 的步骤", () => 
 		"Initialize D1 schema (first creation only)",
 			"Prepare D1 migrations",
 			"Apply D1 migrations",
-			"Ensure admin user (optional)",
+				"Sync administrator credentials (optional)",
 				"Verify login administrator",
 			"Prepare Worker encryption secret",
 			"Deploy worker",
@@ -59,12 +58,14 @@ test("Cloudflare 生产凭据只注入实际调用 Cloudflare 的步骤", () => 
 });
 
 test("Actions 在管理员初始化后、发布前验证可登录超管，并拒绝只填一项凭据", () => {
-	const generation = getStep("Generate admin bootstrap SQL (optional)");
+	const generation = getStep("Sync administrator credentials (optional)");
+	assert.match(generation, /node \.github\/scripts\/sync-admin-credentials\.ts/);
+	assert.match(generation, /EDGECHAT_D1_DATABASE_ID: \$\{\{ steps\.ensure_resources\.outputs\.d1_database_id \}\}/);
 	assert.match(generation, /elif \[\[ -n "\$EDGECHAT_ADMIN_USERNAME" \|\| -n "\$EDGECHAT_ADMIN_PASSWORD" \]\]/);
 	assert.match(generation, /exit 1/);
 	assert.match(getStep("Verify login administrator"), /prepare-d1-migrations\.mjs --verify-admin/);
 	assert.match(getStep("Verify login administrator"), /EDGECHAT_D1_DATABASE_ID: \$\{\{ steps\.ensure_resources\.outputs\.d1_database_id \}\}/);
-	assert.ok(workflow.indexOf("      - name: Ensure admin user") < workflow.indexOf("      - name: Verify login administrator"));
+	assert.ok(workflow.indexOf("      - name: Sync administrator credentials") < workflow.indexOf("      - name: Verify login administrator"));
 	assert.ok(workflow.indexOf("      - name: Verify login administrator") < workflow.indexOf("      - name: Deploy worker"));
 });
 
@@ -78,12 +79,12 @@ test("生产部署在创建或修改云资源前运行完整测试", () => {
 
 test("Actions 通过仓库变量配置保留天数，并在云资源操作前拒绝非法值", () => {
 	const validation = getStep("Validate message retention");
-	assert.match(validation, /MESSAGE_RETENTION_DAYS: \$\{\{ vars.MESSAGE_RETENTION_DAYS \|\| '15' \}\}/);
+	assert.match(validation, /MESSAGE_RETENTION_DAYS: \$\{\{ vars.MESSAGE_RETENTION_DAYS \|\| '30' \}\}/);
 	assert.match(validation, /\^\[1-9\]\[0-9\]\*\$/);
 	assert.match(validation, /exit 1/);
 	assert.ok(workflow.indexOf("      - name: Validate message retention") < workflow.indexOf("      - name: Ensure Cloudflare resources"));
 	const config = getStep("Generate wrangler config for CI");
-	assert.match(config, /MESSAGE_RETENTION_DAYS: \$\{\{ vars.MESSAGE_RETENTION_DAYS \|\| '15' \}\}/);
+	assert.match(config, /MESSAGE_RETENTION_DAYS: \$\{\{ vars.MESSAGE_RETENTION_DAYS \|\| '30' \}\}/);
 	assert.ok(config.includes('MESSAGE_RETENTION_DAYS = \\"${MESSAGE_RETENTION_DAYS}\\"'));
 });
 

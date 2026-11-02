@@ -9,51 +9,11 @@ import { D1_REPAIRS } from "./d1-repair-manifest.mjs";
 import { collectSchemaArtifacts, collectAppliedMigrations, inspectSchema, schemaTables } from "../../worker/src/maintenance/schema-contract.ts";
 import { generateSchemaManifest } from "./generate-schema-manifest.mjs";
 import { verifyAdminBootstrap } from "./generate-admin-bootstrap-sql.mjs";
+import { createD1Query } from "./cloudflare-d1.ts";
 
-const API_BASE_URL = "https://api.cloudflare.com/client/v4";
 const OUTPUT_PATH = ".tmp/edgechat-d1-migrations.sql";
-const requiredEnv = [
-  "CLOUDFLARE_API_TOKEN",
-  "CLOUDFLARE_ACCOUNT_ID",
-  "EDGECHAT_D1_DATABASE_ID",
-];
-
-for (const key of requiredEnv) {
-  if (!process.env[key]) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-}
-
-const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-const databaseId = process.env.EDGECHAT_D1_DATABASE_ID;
+const queryD1 = createD1Query();
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-
-function extractApiError(payload, fallback) {
-  if (!payload || !Array.isArray(payload.errors) || payload.errors.length === 0) {
-    return fallback;
-  }
-  return payload.errors.map((error) => `${error.code}: ${error.message}`).join("; ");
-}
-
-async function queryD1(sql) {
-  const response = await fetch(
-    `${API_BASE_URL}/accounts/${accountId}/d1/database/${databaseId}/query`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ sql }),
-    },
-  );
-  const payload = await response.json();
-  if (!response.ok || payload?.success === false) {
-    throw new Error(extractApiError(payload, `Cloudflare D1 query failed with ${response.status}`));
-  }
-  return payload.result?.[0]?.results ?? [];
-}
 
 async function main() {
   if (process.argv.includes("--verify-admin")) {

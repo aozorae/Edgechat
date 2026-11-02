@@ -38,12 +38,12 @@ git push origin master
 
 ## 自动清除消息天数
 
-Worker 环境变量 `MESSAGE_RETENTION_DAYS` 默认 `15` 天，请填写正整数（例如 `30`）。GitHub Actions 部署者在 **Settings -> Secrets and variables -> Actions -> Variables** 添加同名 Repository Variable，然后运行 `00 Deploy Worker`；每次部署都会读取它，因此上游同步不会重置该设置。它不是 Secret。
+Worker 环境变量 `MESSAGE_RETENTION_DAYS` 默认 `30` 天，请填写正整数（例如 `60`）。GitHub Actions 部署者在 **Settings -> Secrets and variables -> Actions -> Variables** 添加同名 Repository Variable，然后运行 `00 Deploy Worker`；每次部署都会读取它，因此上游同步不会重置该设置。它不是 Secret。
 
-手动部署在 Wrangler 配置的 `[vars]` 中设置 `MESSAGE_RETENTION_DAYS = "30"`，再部署。Cloudflare 面板也可修改 Worker 的同名文本变量并发布，但 Actions 后续部署以 Repository Variable 为准，未配置则恢复 15 天。只在本机导出同名环境变量不会自动传入线上 Worker。
+手动部署在 Wrangler 配置的 `[vars]` 中设置 `MESSAGE_RETENTION_DAYS = "60"`，再部署。Cloudflare 面板也可修改 Worker 的同名文本变量并发布，但 Actions 后续部署以 Repository Variable 为准，未配置则恢复 30 天。只在本机导出同名环境变量不会自动传入线上 Worker。
 
-从 `2.17.2` 起，新安装和未显式配置天数的部署默认保留 15 天。已有 Repository Variable 或实际部署的 Wrangler 配置中显式填写的值（包括 `7`）继续生效；希望改为 15 天时请更新该值后部署。延长保留期不会恢复此前已删除的消息，也不需要迁移或改写消息记录。
+从 `2.19.1` 起，新安装和未显式配置天数的部署默认保留 30 天。已有 Repository Variable 或实际部署的 Wrangler 配置中显式填写的值（包括 `7`、`15`）继续生效；希望改为 30 天时请更新该值后部署。延长保留期不会恢复此前已删除的消息，也不需要迁移或改写消息记录。
 
-每天约 UTC 19:00（北京时间次日 03:00）清理超过保留期的消息与关联附件，按预算分批处理，不保证一轮清完。时间按消息创建时间计算，不按最后查看时间。`0` 不是关闭开关：Worker 对无效值、非正数及小于一天的值回退 15 天；Actions 对非正整数直接报错。缩短保留期会在下一次清理删除更早消息，删除不可恢复，之后改大天数也不能找回。其他软删除数据、孤儿上传和 Telegram 通知投递记录的保留期不变。
+每天约 UTC 19:00（北京时间次日 03:00）清理超过保留期的消息与关联附件，按预算分批处理，不保证一轮清完。时间按消息创建时间计算，不按最后查看时间。`0` 不是关闭开关：Worker 对无效值、非正数及小于一天的值回退 30 天；Actions 对非正整数直接报错。缩短保留期会在下一次清理删除更早消息，删除不可恢复，之后改大天数也不能找回。其他软删除数据、孤儿上传和 Telegram 通知投递记录的保留期不变。
 
 参考：[GITHUB_TOKEN 与 dispatch 例外](https://docs.github.com/en/actions/concepts/security/github_token)、[跳过 push 工作流](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/skip-workflow-runs)、[令牌权限](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)。

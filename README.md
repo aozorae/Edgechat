@@ -1,6 +1,10 @@
 <div align="center">
   <img src="Edgechat.jpg" alt="EdgeChat" width="640" />
 
+  <p>
+    <a href="https://trendshift.io/repositories/140939?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-140939" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/140939/daily?language=JavaScript" alt="aozorae%2FEdgechat | Trendshift" width="250" height="55"/></a>
+  </p>
+
   <h3>自己的聊天空间，不必从维护服务器开始。</h3>
   <p>基于 Cloudflare 的开源自部署团队聊天系统</p>
   <p>实时群聊与私信 · Telegram 双向桥接 · 语音与文件 · 消息与附件服务端加密</p>
@@ -98,7 +102,7 @@
   <tr>
     <td width="50%" valign="top">
       <b>🔔 Telegram 离线提醒</b><br />
-      成员可在设置中绑定 Bot，网页关闭时也能收到私信和 @ 提醒，且提醒中不包含消息正文，不泄露内容。
+      成员可在设置中绑定 Bot，接收仅含正文前 8 个字符及站内查看链接的私信和 @ 提醒。在 Bot 输入 /chats 后点选私聊联系人，即可回复提示发送文字，无需记忆用户 ID。
     </td>
     <td width="50%" valign="top">
       <b>🪟 全端一致的体验</b><br />
@@ -138,7 +142,7 @@ EdgeChat 对**新写入的消息正文和新上传的附件**使用 AES-256-GCM 
 > **这是服务端加密，不是端到端加密。**
 > Worker 在通过会话权限校验后解密内容，Cloudflare 运行环境和掌握密钥的部署方仍需要被信任。后台没有消息查看入口，不代表部署者在技术上无法访问内容。
 >
-> 开启 Telegram 桥接后，被转发的消息也会进入对应的 Telegram 会话。
+> Telegram 群组桥接仍将完整消息同步到 Telegram；私人通知仅发送正文前 8 个 Unicode 字符及无登录凭据的会话链接，附件不显示名称。短预览仍是明文，短消息可能完整显示，已发送的旧全文副本不会自动撤回；站内仍采用服务端加密存储。私人通知可单独关闭，解绑可同时停止通知与 Bot 私聊发送。
 
 <details>
 <summary><strong>密钥管理与轮换说明</strong></summary>
@@ -185,13 +189,17 @@ GitHub Actions 会管理服务端加密 Worker Secrets。首次部署时，如�
 
 ### GitHub Actions 自动部署
 
-消息默认保留 **15 天**，超过保留期后由每日定时任务分批自动删除；`MESSAGE_RETENTION_DAYS` 可自定义，已有显式配置不会因升级改变，已删除消息无法恢复。
+管理员忘记密码时，更新仓库的 `EDGECHAT_ADMIN_PASSWORD` Secret 并重新运行 `00 Deploy Worker` 即可恢复。每次部署以该 Secret 为准；密码改变会使旧会话失效，同密码不影响会话，不会自动提权或解封。详见[管理员初始化与密码恢复](docs/admin-bootstrap.md)。
+
+消息默认保留 **30 天**，超过保留期后由每日定时任务分批自动删除；`MESSAGE_RETENTION_DAYS` 可自定义，已有显式配置不会因升级改变，已删除消息无法恢复。
 
 推荐使用仓库内置的 GitHub Actions 工作流进行部署和后续更新。`Sync Upstream` 每天检查两次，仅自动合并带 `EdgeChat-Update: stable` / `security` 尾行标记的上游发布并显式触发部署；首次启用、同步令牌及 `MESSAGE_RETENTION_DAYS` 配置见[自动更新说明](docs/auto-update.md)。
 
 Fork 后首次进入自己的仓库 `Actions` 页面，先按 GitHub 提示启用工作流，再选择列表靠前的 **`00 Deploy Worker`** 并点击 **`Run workflow`**。`00` 前缀随 Fork 继承，用于默认名称排序，不依赖主仓的置顶设置；部署网站无需运行其他工作流。
 
 按照文档完成 Cloudflare 授权与仓库配置后，可以手动运行 `00 Deploy Worker`，也可以通过向 `master` 或 `main` 分支推送代码触发部署。工作流文件为 `.github/workflows/deploy-worker.yml`。
+
+登录默认启用 Workers 原生限流；可选的 Cloudflare Turnstile 登录验证默认关闭，在后台「集成 → 登录验证」开启。配置 Secret、手动部署 binding 和旧客户端兼容边界见[登录验证与限流](docs/login-verification.md)。
 
 **[快速开始](https://echat.azora.top/guide/getting-started.html) · [GitHub Actions 部署教程](https://echat.azora.top/guide/actions-deploy.html)**
 

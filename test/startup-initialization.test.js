@@ -61,8 +61,8 @@ test('the entry point mounts the application while authentication is still pendi
     installChunkLoadRecovery() {}, takeNotificationRoomTarget: () => null,
     initializeI18n: () => Promise.resolve(),
     store: { initialize() { calls.push('initialize'); return new Promise(() => {}); } },
-    createApp: () => ({ use() { calls.push('router'); }, mount() { calls.push('mount'); } }),
-    installCapacitorIntegration() {}, initLiquidGlass() {}, setTimeout() {}
+    createApp: () => ({ onUnmount() {}, use() { calls.push('router'); }, mount() { calls.push('mount'); } }),
+    installCapacitorIntegration() {}, initLiquidGlass() {}, initVisualEffects() {}
   });
   await flush();
   assert.deepEqual(calls, ['initialize', 'router', 'mount']);

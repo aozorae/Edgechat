@@ -30,6 +30,8 @@ import { registerMaintenanceRoutes } from './api/maintenance.ts';
 import { registerStealthRoutes } from './api/stealth.ts';
 import { createSiteEntry } from './stealth/entry.ts';
 import { loginWithPassword } from './login.ts';
+import { enforceRateLimit, verifyLoginSecurity } from './login-security.ts';
+import { registerLoginVerificationPublicRoutes, registerLoginVerificationRoutes } from './api/login-verification.ts';
 import { sessionCookie } from './session-cookie.ts';
 import { registerInstanceBridgePublicRoutes, registerInstanceBridgeRoutes } from './api/instance-bridge.ts';
 import { InstanceBridge } from './do/InstanceBridge.ts';
@@ -91,6 +93,13 @@ app.use('/api/*', cors({
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
 
+app.use('/api/*', async (c, next) => {
+  if (c.req.method !== 'OPTIONS' && !new URL(c.req.url).pathname.startsWith('/api/integrations/')) {
+    await enforceRateLimit(c.env.API_RATE_LIMITER, c.req.raw);
+  }
+  await next();
+});
+
 app.get('/api/health', (c) => c.json({ ok: true }));
 
 app.get('/api/site', async (c) => {
@@ -100,6 +109,7 @@ app.get('/api/site', async (c) => {
 
 registerTelegramPublicRoutes(app);
 registerInstanceBridgePublicRoutes(app);
+registerLoginVerificationPublicRoutes(app);
 
 app.get('/api/register-links/:token', async (c) => {
   const token = String(c.req.param('token') || '').trim();
@@ -169,6 +179,7 @@ app.post('/api/auth/login', async (c) => {
     return errorResponse('请输入用户名和密码');
   }
 
+  await verifyLoginSecurity(c.env, c.req.raw, payload.turnstileToken);
   const session = await loginWithPassword(c.env, username, password, c.req.raw);
   if (!session) {
     return errorResponse('账号或密码错误', 401);
@@ -303,6 +314,7 @@ registerRbacRoutes(app);
 registerStorageRoutes(app);
 registerMaintenanceRoutes(app);
 registerStealthRoutes(app);
+registerLoginVerificationRoutes(app);
 registerTelegramAdminRoutes(app);
 registerTelegramNotificationRoutes(app);
 registerInstanceBridgeRoutes(app);
@@ -344,6 +356,7 @@ app.onError((error, c) => {
   console.error(error);
   const isV1 = new URL(c.req.url).pathname.startsWith('/api/v1/');
   if (error instanceof ApiError) {
+    if (error.status === 429) c.header('Retry-After', '60');
     if (isV1) {
       return v1ErrorResponse(error.code, error.message, error.status);
     }

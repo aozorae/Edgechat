@@ -80,7 +80,7 @@ test('仪表盘独立置顶，业务分类与分隔线下的系统入口顺序�
   assert.deepEqual(adminNavigation.map((section) => section.items.map((item) => item.id)), [
     ['dashboard'],
     ['rbac', 'channels', 'users', 'invites', 'distribution'],
-    ['telegram', 'instance-bridge'],
+    ['login-verification', 'telegram', 'instance-bridge'],
     ['site', 'storage', 'maintenance', 'stealth']
   ]);
   assert.equal(adminNavigation[0].labelKey, undefined);
@@ -133,7 +133,7 @@ test('三语言搜索支持分类、页面和子菜单，无结果时不残留�
     const { query, filteredNavigation } = sidebarNavigation(messages, pages, ['users.create', 'invites.read']);
     query.value = messages['admin.nav.integrations'];
     assert.equal(filteredNavigation.value.length, 1);
-    assert.equal(filteredNavigation.value[0].items.length, 2);
+    assert.equal(filteredNavigation.value[0].items.length, 3);
     query.value = messages['admin.nav.registrationLinks'];
     assert.equal(filteredNavigation.value.length, 1);
     assert.equal(filteredNavigation.value[0].items[0].id, 'invites');

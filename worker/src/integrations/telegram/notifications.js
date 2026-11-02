@@ -80,6 +80,7 @@ export async function disconnectTelegramNotifications(db, userId) {
 export { enqueueTelegramNotification, deliverTelegramNotification, rescueTelegramNotifications } from "./notification-queue.ts";
 
 export async function pruneTelegramNotifications(env) {
+	await env.DB.prepare("DELETE FROM telegram_dm_prompts WHERE expires_at <= CURRENT_TIMESTAMP").run();
 	// 去重只需要覆盖最近消息，终态提醒不应永久占用数据库。
 	await env.DB.prepare(
 		"DELETE FROM telegram_notification_outbox WHERE status IN ('sent', 'failed') AND updated_at < datetime('now', '-7 days')",

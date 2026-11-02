@@ -48,6 +48,7 @@ export const adminNavigation: NavigationSection[] = [
     id: 'integrations',
     labelKey: 'admin.nav.integrations',
     items: [
+      { id: 'login-verification', labelKey: 'verification.title', descriptionKey: 'verification.description', to: '/admin/login-verification', icon: ShieldCheck },
       { id: 'telegram', labelKey: 'admin.nav.telegram', descriptionKey: 'admin.nav.telegramDescription', to: '/admin/telegram', icon: Send },
       { id: 'instance-bridge', labelKey: 'bridge.title', descriptionKey: 'bridge.description', to: '/admin/instance-bridge', icon: Link2 }
     ]

@@ -226,7 +226,7 @@ test('API v1 从 capabilities、设备登录到复用 bootstrap 保持统一契�
   assert.equal(capabilities.status, 200);
   const capabilityPayload = await capabilities.json();
   assert.equal(capabilityPayload.apiVersion, 1);
-  assert.equal(capabilityPayload.limits.messageRetentionDays, 15);
+  assert.equal(capabilityPayload.limits.messageRetentionDays, 30);
   const customCapabilities = await worker.fetch(
     new Request('https://chat.example/api/v1/capabilities'),
     { ...env, MESSAGE_RETENTION_DAYS: '7' }

@@ -1,4 +1,5 @@
 import { getStealthSettings } from '../data/stealth-settings.ts';
+import { getLoginVerification } from '../data/login-verification.ts';
 import { validateSession } from '../session.js';
 import { cookieRequestAllowed, extractSessionToken } from '../session-cookie.ts';
 import { gatePage, notFound, privateHeaders, submitGate } from './gate.ts';
@@ -68,7 +69,7 @@ export function createSiteEntry(dispatch) {
       const validation = token ? await validateSession(env, token) : { ok: false };
       if (!validation.ok) {
         if ((path === '/' || path === settings.loginPath) && ['GET', 'HEAD'].includes(request.method)) {
-          const response = gatePage(settings);
+          const response = gatePage(settings, false, 200, await getLoginVerification(env.DB));
           return request.method === 'HEAD' ? new Response(null, response) : response;
         }
         return notFound();

@@ -82,6 +82,8 @@ export function sendTelegramText(botToken, {
 	text,
 	parseMode = "HTML",
 	replyToMessageId = null,
+	replyMarkup = null,
+	disableLinkPreview = false,
 	timeoutMs = 0,
 }) {
 	const payload = {
@@ -89,6 +91,8 @@ export function sendTelegramText(botToken, {
 		text: String(text),
 	};
 	if (parseMode) payload.parse_mode = parseMode;
+	if (replyMarkup) payload.reply_markup = replyMarkup;
+	if (disableLinkPreview) payload.link_preview_options = { is_disabled: true };
 	if (replyToMessageId) {
 		payload.reply_parameters = { message_id: Number(replyToMessageId) };
 	}

@@ -23,6 +23,7 @@ paths:
     post:
       security: []
       operationId: loginDevice
+      description: When capabilities.loginVerification.enabled is true, each attempt requires a fresh Turnstile token with action login. Legacy clients cannot sign in while verification is enabled.
       requestBody:
         required: true
         content:
@@ -37,6 +38,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/MobileAuth"
         "401":
+          $ref: "#/components/responses/ApiError"
+        "403":
+          $ref: "#/components/responses/ApiError"
+        "429":
+          $ref: "#/components/responses/ApiError"
+        "503":
           $ref: "#/components/responses/ApiError"
   /auth/refresh:
     post:
@@ -522,6 +529,12 @@ components:
       required: [apiVersion, site, limits, features]
       properties:
         apiVersion: { type: integer, const: 1 }
+        loginVerification:
+          type: object
+          required: [enabled, siteKey]
+          properties:
+            enabled: { type: boolean, default: false }
+            siteKey: { type: string }
         site:
           type: object
           required: [siteName, siteIconUrl]
@@ -550,6 +563,9 @@ components:
       properties:
         username: { type: string }
         password: { type: string }
+        turnstileToken:
+          type: string
+          description: Single-use Turnstile token with action login; required when login verification is enabled.
         device:
           type: object
           required: [installationId, name, appVersion]

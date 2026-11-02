@@ -43,6 +43,8 @@ export const ADMIN_POLICIES = [
   policy('bridge.action', 'POST', 'instance-bridge/([^/]+)/actions', ['instance_bridge.manage'], { scope: 'bridge', fields: ['action'], audit: true }),
   policy('maintenance.read', 'GET', 'maintenance', ['maintenance.read']),
   policy('stealth.read', 'GET', 'stealth', [], { superOnly: true }),
+  policy('login-verification.read', 'GET', 'login-verification', [], { superOnly: true }),
+  policy('login-verification.update', 'PUT', 'login-verification', [], { superOnly: true, fields: ['enabled', 'siteKey'], audit: true }),
   policy('stealth.update', 'PUT', 'stealth', [], { superOnly: true, fields: ['enabled'], audit: true }),
   policy('rbac.catalog', 'GET', 'rbac/permissions', [], { superOnly: true }),
   policy('rbac.list', 'GET', 'rbac/roles', [], { superOnly: true }),
