@@ -19,6 +19,8 @@ function createHarness(isAdmin = false) {
 		`INSERT INTO users (id, username, display_name, password_hash, password_salt)
 		 VALUES (1, 'owner', 'Owner', 'hash', 'salt'), (2, 'member', 'Member', 'hash', 'salt')`,
 	);
+	// [打招呼制 2026-11-01] 新契约：建群拉人须互认（1↔2 预置为联系人）
+	database.exec("INSERT INTO greet_contacts (a, b) VALUES (1, 2)");
 	const deletedFiles = [];
 	const env = {
 		DB: createD1Adapter(database),

@@ -1,0 +1,69 @@
+
+ ⛅️ wrangler 4.80.0 (update available 4.151.1)
+──────────────────────────────────────────────
+[custom build] Running: npm run schema:generate
+[custom build] 
+[custom build] > edgechat@2.17.2 schema:generate
+[custom build] > node .github/scripts/generate-schema-manifest.mjs
+[custom build] 
+[custom build] 
+[custom build] Schema manifest: 347 artifacts, 2026-10-11-telegram-notification-budgets
+[custom build] 
+Using secrets defined in .dev.vars
+Your Worker has access to the following bindings:
+Binding                                                                            Resource                  Mode
+env.CHANNEL_ROOM (ChannelRoom)                                                     Durable Object            local
+env.SCHEDULER (Scheduler)                                                          Durable Object            local
+env.USER_INBOX (UserInbox)                                                         Durable Object            local
+env.INSTANCE_BRIDGE (InstanceBridge)                                               Durable Object            local
+env.VOICE_CALL (VoiceCall)                                                         Durable Object            local
+env.TELEGRAM_NOTIFICATIONS (TelegramNotifications)                                 Durable Object            local
+env.SESSIONS (YOUR_KV_NAMESPACE_ID_HERE)                                           KV Namespace              local
+env.DB (cfchat-db)                                                                 D1 Database               local
+env.FILES (cfchat-files)                                                           R2 Bucket                 local
+env.ASSETS                                                                         Assets                    local
+env.ADMIN_USERNAMES ("admin")                                                      Environment Variable      local
+env.MESSAGE_RETENTION_DAYS ("15")                                                  Environment Variable      local
+env.SOFT_DELETE_RETENTION_DAYS ("60")                                              Environment Variable      local
+env.GC_BATCH_SIZE ("90")                                                           Environment Variable      local
+env.GC_MAX_BATCHES_PER_RUN ("20")                                                  Environment Variable      local
+env.GC_INTERNAL_OPERATION_BUDGET ("900")                                           Environment Variable      local
+env.GC_D1_STATEMENT_BUDGET ("1200")                                                Environment Variable      local
+env.GC_R2_OPERATION_BUDGET ("300")                                                 Environment Variable      local
+env.SITE_ORIGINS ("")                                                              Environment Variable      local
+env.R2_DELETE_MAX_RETRY ("8")                                                      Environment Variable      local
+env.ORPHAN_UPLOAD_RETENTION_DAYS ("1")                                             Environment Variable      local
+env.ALLOWED_FILE_TYPES ("image/,video/,audio/,application/pdf,...")                Environment Variable      local
+env.MAX_FILE_SIZE ("20971520")                                                     Environment Variable      local
+env.EDGECHAT_ENCRYPTION_KEYRING ("(hidden)")                                       Environment Variable      local
+
+The file src changed, restarting build...
+[custom build] Running: npm run schema:generate
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mScheduled Workers are not automatically triggered during local development.[0m
+
+  To manually trigger a scheduled event, run:
+    curl "http://127.0.0.1:8787/cdn-cgi/handler/scheduled"
+  For more details, see [4mhttps://developers.cloudflare.com/workers/configuration/cron-triggers/#test-cron-triggers-locally[0m
+
+
+[custom build] 
+[custom build] > edgechat@2.17.2 schema:generate
+[custom build] > node .github/scripts/generate-schema-manifest.mjs
+[custom build] 
+[custom build] 
+[custom build] Schema manifest: 347 artifacts, 2026-10-11-telegram-notification-budgets
+[custom build] 
+⎔ Starting local server...
+[wrangler:info] Ready on http://0.0.0.0:8787
+[wrangler:info] - http://10.126.125.1:8787
+[wrangler:info] - http://10.132.148.139:8787
+[wrangler:info] - http://192.168.1.2:8787
+[wrangler:info] - http://127.0.0.1:8787
+[wrangler:info] - http://172.25.160.1:8787
+[wrangler:info] - http://172.19.128.1:8787
+[wrangler:info] - http://172.20.192.1:8787
+[wrangler:info] - http://172.31.128.1:8787
+[wrangler:info] GET /api/inbox/ws 101 Switching Protocols (102ms)
+[wrangler:info] GET /api/ws/public/1 101 Switching Protocols (84ms)
+[wrangler:info] GET /api/health 200 OK (109ms)
+[wrangler:info] GET /api/health 200 OK (172ms)

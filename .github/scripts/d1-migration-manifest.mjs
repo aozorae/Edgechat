@@ -247,9 +247,41 @@ export const D1_MIGRATIONS = [
     artifacts: ["index:idx_messages_channel_live_time"],
   },
   {
+    id: "2026-10-26-ai-reply",
+    file: "worker/migrations/2026-10-26-ai-reply.sql",
+    artifacts: [
+      "table:ai_reply_jobs",
+      "index:idx_ai_reply_jobs_recipient",
+      "index:idx_ai_reply_jobs_status",
+    ],
+    rerunnable: true,
+  },
+  {
     id: "2026-10-26-distribution",
     file: "worker/migrations/2026-10-26-distribution.sql",
     artifacts: ["column:users.invited_by", "column:users.invited_at", "index:idx_users_invited_by"],
+  },
+  {
+    id: "2026-10-26-memory-account",
+    file: "worker/migrations/2026-10-26-memory-account.sql",
+    artifacts: [
+      "table:user_memory_accounts",
+      "table:text_session_reports",
+      "index:idx_user_memory_accounts_status",
+      "index:idx_text_session_reports_user",
+    ],
+    rerunnable: true,
+  },
+  {
+    id: "2026-11-01-greet-contacts",
+    file: "worker/migrations/2026-11-01-greet-contacts.sql",
+    artifacts: [
+      "table:greet_requests",
+      "table:greet_contacts",
+      "index:idx_greet_pending_by_to",
+      "index:idx_greet_by_from",
+    ],
+    rerunnable: true,
   },
 ];
 

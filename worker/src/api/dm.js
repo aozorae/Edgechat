@@ -1,6 +1,7 @@
 import { ensureDmChannel } from '../data/dm-provisioning.js';
 import { listAdminDms, listUserDms } from '../data/dm-queries.js';
 import { getUserBlockStatus } from '../data/user-blocks.ts';
+import { areContacts, listOfficialUsernames } from '../data/social.js';
 import { errorResponse, parseJsonRequest } from '../utils.js';
 import { activeUserSql } from '../user-status.js';
 
@@ -33,6 +34,16 @@ export function registerDmRoutes(app) {
 
     if (!targetUser.results[0]) {
       return errorResponse('目标用户不存在', 404);
+    }
+
+    // [打招呼制 2026-11-01] 私聊闸：仅互认联系人或官方号可开（默认互不可聊）
+    const target = targetUser.results[0];
+    const officials = await listOfficialUsernames(c.env.DB);
+    if (!officials.includes(target.username)) {
+      const known = await areContacts(c.env.DB, session.userId, target.id);
+      if (!known) {
+        return errorResponse('还没建立联系：先在「新的对话」里给对方发一句打招呼，对方同意后就能聊了', 403);
+      }
     }
 
     const [channel, blockStatus] = await Promise.all([

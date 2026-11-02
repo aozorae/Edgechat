@@ -21,6 +21,7 @@ import {
 import { errorResponse, parseJsonRequest, publicFileUrl } from '../utils.js';
 import { activeUserSql } from '../user-status.js';
 import { hardDeleteChannel } from '../data/channel-deletion.ts';
+import { areContacts, listOfficialUsernames } from '../data/social.js';
 
 function normalizeMemberIds(payload) {
   const source = Array.isArray(payload.memberUserIds)
@@ -84,6 +85,26 @@ export function registerChannelRoutes(app) {
 
     const inviteUserIds = normalizeMemberIds(payload).filter((userId) => userId !== session.userId);
     const validInvitees = await ensureValidInvitees(c.env.DB, inviteUserIds);
+
+    // [打招呼制 2026-11-01] 拉人闸：被拉者须为互认联系人或官方号（防建群绕过私聊边界）
+    const officials = await listOfficialUsernames(c.env.DB);
+    const officialIds = officials.length
+      ? (
+          await c.env.DB
+            .prepare(`SELECT id FROM users WHERE username IN (${officials.map(() => '?').join(',')})`)
+            .bind(...officials)
+            .all()
+        ).results.map((r) => Number(r.id))
+      : [];
+    const allowed = [];
+    for (const uid of validInvitees) {
+      if (officialIds.includes(uid) || (await areContacts(c.env.DB, session.userId, uid))) {
+        allowed.push(uid);
+      }
+    }
+    if (allowed.length !== validInvitees.length) {
+      return errorResponse('只能拉已互认的联系人（或官方助手）进群', 403);
+    }
     const result = await c.env.DB.prepare(
       `INSERT INTO channels (name, description, kind, created_by)
        VALUES (?, ?, ?, ?)`

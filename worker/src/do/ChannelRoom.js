@@ -17,6 +17,7 @@ import { projectUnreadMessage } from '../unread-projection.js';
 import { isVerifiedInternalRequest, parseVerifiedPrincipal } from '../verified-identity.js';
 import { durableObjectHealth } from '../maintenance/do-health.ts';
 import { wakeForMessage } from '../integrations/instance-bridge/delivery.ts';
+import { runAiReply } from '../integrations/ai-reply/runner.js';
 
 const MESSAGE_SIZE_LIMIT = 10 * 1024;
 
@@ -169,6 +170,37 @@ export class ChannelRoom {
     }
   }
 
+  /**
+   * 期一增项：文本回复链。消息落库并广播后异步触发，不阻塞发送方响应。
+   * 只对「用户 与 笨笨」的一对一 dm 生效（判定在 runner 内，非 dm 直接返回）。
+   */
+  scheduleAiReply(room, message) {
+    if (!room || room.kind !== 'dm' || !message?.sender || message.sender.kind !== 'local') {
+      return;
+    }
+    this.state.waitUntil(
+      runAiReply({
+        env: this.env,
+        room,
+        triggerMessage: message,
+        onReply: (replyMessage) => this.deliverAiReply(room, replyMessage)
+      }).catch((error) => {
+        console.error(
+          JSON.stringify({
+            message: 'ai reply failed',
+            roomId: Number(room.id),
+            error: error instanceof Error ? error.message : String(error)
+          })
+        );
+      })
+    );
+  }
+
+  async deliverAiReply(room, message) {
+    await this.broadcast(JSON.stringify({ protocolVersion: 1, type: 'message', message }));
+    this.runMessageProjections(room, message, null);
+  }
+
   async receiveExternalMessage(request) {
     if (!isVerifiedInternalRequest(request)) {
       return Response.json({ error: { code: 'authentication_required', message: 'Unauthorized' } }, { status: 401 });
@@ -223,6 +255,7 @@ export class ChannelRoom {
         if (result.created) {
           await this.broadcast(result.packet);
           this.runMessageProjections(access.room, result.message, result.replyToSenderId);
+          this.scheduleAiReply(access.room, result.message);
         }
         return Response.json({ created: result.created, message: result.message });
       }
@@ -393,6 +426,7 @@ export class ChannelRoom {
       await this.broadcast(result.packet);
       // 未读与外部桥接都属于提交后投影，异步执行以缩短 WebSocket 发送链路。
       this.runMessageProjections(currentMeta.room, result.message, result.replyToSenderId);
+      this.scheduleAiReply(currentMeta.room, result.message);
     } catch (error) {
       if (
         error instanceof MessageSubmissionError ||

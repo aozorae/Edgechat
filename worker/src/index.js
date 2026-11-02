@@ -23,6 +23,7 @@ import {
   registerDistributionAdminRoutes,
   registerDistributionPublicRoutes
 } from './api/distribution.js';
+import { registerAiReplyAdminRoutes } from './api/ai-reply.js';
 import { registerRbacRoutes } from './api/rbac.ts';
 import { registerStorageRoutes } from './api/storage.ts';
 import { registerMaintenanceRoutes } from './api/maintenance.ts';
@@ -35,12 +36,17 @@ import { InstanceBridge } from './do/InstanceBridge.ts';
 import { rescueBridgeDeliveries } from './integrations/instance-bridge/delivery.ts';
 import { registerChannelRoutes } from './api/channels.js';
 import { registerContactRoutes } from './api/contacts.ts';
+import { registerGreetRoutes } from './api/greet.js';
+import { listVisibleUsers } from './data/social.js';
 import { registerLoginNetworkRoutes } from './api/login-network.ts';
 import { registerDmRoutes } from './api/dm.js';
 import { registerCallRoutes } from './api/calls.ts';
 import { VoiceCall } from './do/VoiceCall.ts';
 import { TelegramNotifications } from './do/TelegramNotifications.ts';
 import { registerMessageRoutes } from './api/messages.js';
+import { registerMemoryAdminRoutes, registerMemoryRoutes } from './api/memory.js';
+import { backfillStaleSessions } from './integrations/memory/text-session.js';
+import { ensureBenbenBot } from './data/distribution.js';
 import { registerUploadRoutes } from './api/upload.js';
 import { registerUserBlockRoutes } from './api/user-blocks.ts';
 import { registerUserProfileRoutes } from './api/user-profile.ts';
@@ -178,6 +184,11 @@ app.post('/api/auth/login', async (c) => {
 // 期一：分发制公开接口（验证码校验沿用 /api/register-links；config 与 auto-register 公开）
 // 注意：必须注册在 v1 路由之前，否则会命中 v1 的登录中间件链（401）
 registerDistributionPublicRoutes(app);
+// TASK-133：Chat 版记忆（客户端文本会话结算上报）。
+// 必须注册在 v1 路由之前：v1 的 /api/v1/* legacy 代理兜底（api/v1.js app.all）注册更早时
+// 会把 /api/v1/memory/* 吞掉转发到不存在的 legacy 路径（本地链路实测 404，2026-10-26）。
+// 因此这里显式挂 authMiddleware，不依赖下方 /api/* 的全局中间件。
+registerMemoryRoutes(app);
 registerV1Routes(app);
 
 app.use('/api/*', authMiddleware);
@@ -260,8 +271,9 @@ app.get('/api/users', async (c) => {
 app.get('/api/bootstrap', async (c) => {
   const session = c.get('session');
   // schema/迁移负责历史回填，建号路径与触发器负责新增成员；初始化不再重复写入。
+  // [打招呼制 2026-11-01] 目录只回官方号+互认联系人（默认互不可见）；旧 /api/contacts 全量留给后台
   const [users, channels, dms] = await Promise.all([
-    listActiveUsers(c.env.DB, session.userId),
+    listVisibleUsers(c.env.DB, session.userId),
     listVisibleChannels(c.env.DB, session.userId),
     listUserDms(c.env.DB, session.userId)
   ]);
@@ -273,6 +285,7 @@ app.use('/api/admin/*', adminMiddleware);
 
 registerMessageRoutes(app);
 registerContactRoutes(app);
+registerGreetRoutes(app);
 registerDmRoutes(app);
 registerCallRoutes(app);
 registerUserBlockRoutes(app);
@@ -282,6 +295,10 @@ registerChannelRoutes(app);
 registerAdminRoutes(app);
 // 期一：分发制后台接口（分发总开关 + 一级邀请树，仅管理员）
 registerDistributionAdminRoutes(app);
+// 期一增项：文本回复链后台接口（开关 / 每日上限 / 用量统计，仅管理员）
+registerAiReplyAdminRoutes(app);
+// TASK-133：记忆台账只读后台接口（不含令牌）
+registerMemoryAdminRoutes(app);
 registerRbacRoutes(app);
 registerStorageRoutes(app);
 registerMaintenanceRoutes(app);
@@ -342,6 +359,25 @@ export default {
   fetch: createSiteEntry(app.fetch),
   async scheduled(controller, env, ctx) {
     const tasks = [rescueBridgeDeliveries(env), rescueTelegramNotifications(env)];
+    // TASK-133：文本会话结算兜底（客户端漏报时按"静默 >30 分钟"补报）
+    tasks.push(
+      (async () => {
+        try {
+          const bot = await ensureBenbenBot(env.DB);
+          const result = await backfillStaleSessions(env, { botId: Number(bot.id) });
+          if (result.scanned) {
+            console.log(JSON.stringify({ message: "text_session backfill", ...result }));
+          }
+        } catch (error) {
+          console.error(
+            JSON.stringify({
+              message: "text_session backfill failed",
+              error: error instanceof Error ? error.message : String(error)
+            })
+          );
+        }
+      })()
+    );
     // 免费账户的 cron 数量是账户级上限；复用 15 分钟触发器，在 UTC 19:00 的轮次追加每日 GC。
     if (shouldRunDailyGc(controller.scheduledTime)) tasks.push(runScheduledGc(env), pruneTelegramNotifications(env));
     ctx.waitUntil(Promise.all(tasks));

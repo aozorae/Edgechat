@@ -653,6 +653,85 @@ CREATE TABLE IF NOT EXISTS telegram_notification_gate (
 );
 INSERT OR IGNORE INTO telegram_notification_gate (id) VALUES (1);
 
+-- 期一增项：文本回复链任务记录（一条用户消息只回一次，幂等键 trigger_message_id）
+CREATE TABLE IF NOT EXISTS ai_reply_jobs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel_id INTEGER NOT NULL,
+  trigger_message_id INTEGER NOT NULL UNIQUE,
+  recipient_user_id INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK(status IN ('pending', 'running', 'done', 'failed', 'skipped')),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  provider TEXT NOT NULL DEFAULT '',
+  model TEXT NOT NULL DEFAULT '',
+  replied_message_id INTEGER,
+  error TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_reply_jobs_recipient
+  ON ai_reply_jobs(recipient_user_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_ai_reply_jobs_status
+  ON ai_reply_jobs(status, created_at);
+
+-- TASK-133：Chat 版记忆 A 方案（每用户 SAG 试用号台账 + 文本会话结算记录）
+CREATE TABLE IF NOT EXISTS user_memory_accounts (
+  user_id INTEGER PRIMARY KEY,
+  device_id TEXT NOT NULL UNIQUE,
+  customer_id TEXT,
+  sag_token_cipher TEXT,
+  token_key_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'active', 'failed')),
+  last_error TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_memory_accounts_status
+  ON user_memory_accounts(status, updated_at);
+
+CREATE TABLE IF NOT EXISTS text_session_reports (
+  room_id INTEGER NOT NULL,
+  last_message_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  session_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'reported', 'failed')),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  pi_status INTEGER,
+  reported_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_attempt_at TEXT,
+  PRIMARY KEY (room_id, last_message_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_text_session_reports_user
+  ON text_session_reports(user_id, reported_at);
+
+-- [打招呼制社交 2026-11-01] 默认互不可见；打招呼→点头→互见可聊（迁移 2026-11-01-greet-contacts）
+CREATE TABLE IF NOT EXISTS greet_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_user INTEGER NOT NULL,
+  to_user INTEGER NOT NULL,
+  message TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'declined')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  responded_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_greet_pending_by_to
+  ON greet_requests(to_user, status);
+CREATE INDEX IF NOT EXISTS idx_greet_by_from
+  ON greet_requests(from_user, status);
+
+CREATE TABLE IF NOT EXISTS greet_contacts (
+  a INTEGER NOT NULL,
+  b INTEGER NOT NULL,
+  established_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (a, b),
+  CHECK (a < b)
+);
+
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value)
 VALUES ('site_name', 'Edgechat');
 
