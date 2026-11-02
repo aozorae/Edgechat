@@ -130,7 +130,10 @@ export function registerMemoryRoutes(app) {
       const state = memoryState(account);
       return c.json({ available: false, reason: state.status }, 200);
     }
-    const result = await fetchMemoryContext(c.env, token.token, { q: c.req.query("q") });
+    const result = await fetchMemoryContext(c.env, token.token, {
+      customerId: token.customerId,
+      q: c.req.query("q")
+    });
     if (!result.ok) {
       return c.json({ available: false, reason: result.reason }, 200);
     }

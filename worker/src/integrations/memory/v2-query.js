@@ -17,14 +17,18 @@ export function v2Base(env) {
 
 /**
  * 取记忆库上下文。
+ * customerId：该用户的 SAG customer_id（台账里有）——V2 按它隔离各户的记忆池；
+ * 不传时 V2 落到默认池 CUST-0001（旧行为），多户会串池，所以调用方必须传。
  * 返回 { ok, status, payload } 或 { ok:false, status, reason }；任何失败都不抛。
  */
-export async function fetchMemoryContext(env, token, { q = "", timeoutMs = 5000, fetchImpl = fetch } = {}) {
+export async function fetchMemoryContext(env, token, { customerId = "", q = "", timeoutMs = 5000, fetchImpl = fetch } = {}) {
   if (!token) return { ok: false, status: 0, reason: "no_token" };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const url = new URL(`${v2Base(env)}/v2/query/context`);
+    const uid = String(customerId || "").trim();
+    if (uid) url.searchParams.set("user_id", uid);
     const text = String(q || "").trim();
     if (text) url.searchParams.set("q", text.slice(0, 200));
     const response = await fetchImpl(url.toString(), {

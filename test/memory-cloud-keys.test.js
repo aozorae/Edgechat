@@ -314,4 +314,6 @@ test("记忆库查询：服务端代调 V2 并透传 zhengju_bao_v2，端上不�
   assert.equal(seen.length, 1);
   assert.equal(seen[0].auth, "Bearer sagk_query");
   assert.equal(seen[0].url.includes("q="), true);
+  // 多户隔离：URL 必须带台账里的 customer_id 作为 V2 user_id，否则全部落到默认池 CUST-0001 串池
+  assert.equal(seen[0].url.includes("user_id=CUST-T0042"), true);
 });
