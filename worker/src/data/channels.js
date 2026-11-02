@@ -1,5 +1,6 @@
 import { publicFileUrl } from "../utils.js";
 import { isUserDisabled } from "../user-status.js";
+import { conversationUnreadCte } from "./conversation-unread.ts";
 
 function mapVisibleChannel(row) {
 	return {
@@ -41,61 +42,29 @@ function mapAdminChannel(row, includeAvatar) {
 }
 
 export async function listVisibleChannels(db, userId) {
-	const normalizedUserId = Number(userId);
 	const { results } = await db
 		.prepare(
-				`SELECT
-				   c.id, c.name, c.description, c.avatar_key, c.kind,
-				   CASE WHEN c.name = 'general' THEN 1 ELSE 0 END AS is_general,
-			   owner.display_name AS owner_display_name,
-			   EXISTS (SELECT 1 FROM channel_members cm WHERE cm.channel_id = c.id AND cm.user_id = ?) AS is_member,
-			   COALESCE((SELECT cm.role FROM channel_members cm WHERE cm.channel_id = c.id AND cm.user_id = ? LIMIT 1), '') AS my_role,
-			   EXISTS (SELECT 1 FROM channel_members cm WHERE cm.channel_id = c.id AND cm.user_id = ? AND cm.role = 'owner') AS can_manage,
-			   (SELECT COUNT(*) FROM channel_members cm WHERE cm.channel_id = c.id) AS member_count,
-			   (SELECT MAX(m.created_at) FROM messages m WHERE m.channel_id = c.id AND m.deleted_at IS NULL) AS last_message_at,
-				   CASE WHEN EXISTS (SELECT 1 FROM channel_members cm WHERE cm.channel_id = c.id AND cm.user_id = ?)
-				     THEN (SELECT COUNT(*) FROM messages m
-				           WHERE m.channel_id = c.id AND m.deleted_at IS NULL
-				             AND (m.sender_id IS NULL OR m.sender_id != ?)
-			             AND m.id > COALESCE((SELECT mr.last_read_message_id FROM message_reads mr WHERE mr.channel_id = c.id AND mr.user_id = ?), 0))
-				     ELSE 0 END AS unread_count,
-					   CASE WHEN EXISTS (SELECT 1 FROM channel_members cm WHERE cm.channel_id = c.id AND cm.user_id = ?)
-					     THEN (SELECT COUNT(*) FROM messages m
-					           WHERE m.channel_id = c.id AND m.deleted_at IS NULL
-					             AND m.id > COALESCE((SELECT mr.last_read_message_id FROM message_reads mr WHERE mr.channel_id = c.id AND mr.user_id = ?), 0)
-					             AND (m.sender_id IS NULL OR m.sender_id != ?)
-					             AND (
-					               EXISTS (
-					                 SELECT 1 FROM json_each(COALESCE(m.mention_user_ids, '[]')) mention_ids
-					                 WHERE CAST(mention_ids.value AS INTEGER) = ?
-					               )
-					               OR m.reply_to_sender_id = ?
-					             ))
-					     ELSE 0 END AS attention_unread_count
-				 FROM channels c
+			`${conversationUnreadCte("group")}
+			 SELECT c.id, c.name, c.description, c.avatar_key, c.kind,
+			        CASE WHEN c.name = 'general' THEN 1 ELSE 0 END AS is_general,
+			        owner.display_name AS owner_display_name,
+			        me.user_id IS NOT NULL AS is_member,
+			        COALESCE(me.role, '') AS my_role,
+			        COALESCE(me.role = 'owner', 0) AS can_manage,
+			        (SELECT COUNT(*) FROM channel_members cm WHERE cm.channel_id = c.id) AS member_count,
+			        (SELECT MAX(m.created_at) FROM messages m WHERE m.channel_id = c.id AND m.deleted_at IS NULL) AS last_message_at,
+			        COALESCE(unread.unread_count, 0) AS unread_count,
+			        COALESCE(unread.attention_unread_count, 0) AS attention_unread_count
+			 FROM viewer CROSS JOIN channels c
 			 LEFT JOIN users owner ON owner.id = c.created_by
-			 WHERE c.kind IN ('public', 'private')
-			   AND c.deleted_at IS NULL
-				   AND (c.kind = 'public' OR EXISTS (SELECT 1 FROM channel_members cm WHERE cm.channel_id = c.id AND cm.user_id = ?))
-				 ORDER BY
-				   CASE WHEN c.name = 'general' THEN 0 ELSE 1 END,
-				   CASE c.kind WHEN 'public' THEN 0 ELSE 1 END,
-				   c.name ASC`,
+			 LEFT JOIN channel_members me ON me.channel_id = c.id AND me.user_id = viewer.user_id
+			 LEFT JOIN unread ON unread.channel_id = c.id
+			 WHERE c.kind IN ('public', 'private') AND c.deleted_at IS NULL
+			   AND (c.kind = 'public' OR me.user_id IS NOT NULL)
+			 ORDER BY CASE WHEN c.name = 'general' THEN 0 ELSE 1 END,
+			          CASE c.kind WHEN 'public' THEN 0 ELSE 1 END, c.name ASC`,
 		)
-			.bind(
-					normalizedUserId,
-					normalizedUserId,
-					normalizedUserId,
-					normalizedUserId,
-					normalizedUserId,
-					normalizedUserId,
-					normalizedUserId,
-					normalizedUserId,
-					normalizedUserId,
-				normalizedUserId,
-				normalizedUserId,
-				normalizedUserId,
-			)
+		.bind(Number(userId))
 		.all();
 	return results.map(mapVisibleChannel);
 }

@@ -236,6 +236,28 @@ test('demo direct messages honor blocking and resume after unblocking', async ()
 	socket.close();
 });
 
+test('demo retries confirm one canonical message without rebroadcasting', async () => {
+  const frames = [];
+  const peerFrames = [];
+  const connect = target => new Promise(resolve => {
+    const socket = connectDemoRoomSocket({ kind: 'dm', roomId: 10,
+      onMessage: frame => target.push(JSON.parse(frame)),
+      onStatus: event => { if (event.status === 'open') resolve(socket); }
+    });
+  });
+  const socket = await connect(frames);
+  const peer = await connect(peerFrames);
+  const frame = JSON.stringify({ type: 'send', content: 'optimistic', clientMessageId: crypto.randomUUID() });
+  socket.send(frame);
+  socket.send(frame);
+  assert.equal(frames.length, 2);
+  assert.equal(peerFrames.length, 1);
+  assert.deepEqual(frames[0], frames[1]);
+  assert.equal(frames[0].message.clientMessageId, JSON.parse(frame).clientMessageId);
+  socket.close();
+  peer.close();
+});
+
 test('demo room socket persists pin, unpin and pinned-message deletion', async () => {
   const frames = [];
   let socket;

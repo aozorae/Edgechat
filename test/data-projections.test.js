@@ -33,7 +33,7 @@ function createQueryDb(results) {
 	};
 }
 
-test("可见频道查询保持十二个数值身份绑定与直接关注 projection", async () => {
+test("可见频道查询复用单个身份绑定与合并关注 projection", async () => {
 	const { db, capture } = createQueryDb([
 			{
 				id: "9",
@@ -55,7 +55,7 @@ test("可见频道查询保持十二个数值身份绑定与直接关注 project
 
 	const channels = await listVisibleChannels(db, "7");
 
-	assert.deepEqual(capture.binds, [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]);
+	assert.deepEqual(capture.binds, [7]);
 	assert.deepEqual(channels[0], {
 		id: 9,
 			name: "General",
@@ -100,10 +100,10 @@ test("可见频道查询保持十二个数值身份绑定与直接关注 project
 	assert.match(capture.sql, /CASE WHEN c\.name = 'general' THEN 0 ELSE 1 END/);
 });
 
-test("DM 查询保持拉黑状态与回复关注计数所需的八个数值身份绑定", async () => {
+test("DM 查询复用单个身份绑定计算拉黑与回复关注计数", async () => {
 	const { db, capture } = createQueryDb([]);
 	await listUserDms(db, "12");
-	assert.deepEqual(capture.binds, [12, 12, 12, 12, 12, 12, 12, 12]);
+	assert.deepEqual(capture.binds, [12]);
 });
 
 test("后台 DM projection 保持参与者、计数与时间字段", async () => {

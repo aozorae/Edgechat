@@ -1,6 +1,5 @@
 import {
   MessageSubmissionError,
-  submitRoomMessage,
   submitRoomMessageIdempotent
 } from '../message-submission.js';
 import { deleteRoomMessage, MessageDeletionError } from '../message-deletion.js';
@@ -29,9 +28,9 @@ function socketMeta(token, principal, room) {
   };
 }
 
-function sendSocketError(ws, message) {
+function sendSocketError(ws, message, clientMessageId) {
   try {
-    ws.send(JSON.stringify({ protocolVersion: 1, type: 'error', error: message }));
+    ws.send(JSON.stringify({ protocolVersion: 1, type: 'error', error: message, clientMessageId }));
   } catch {
     // Ignore broken sockets.
   }
@@ -88,29 +87,22 @@ export class ChannelRoom {
     }
   }
 
-  async revalidateConnection(ws, meta) {
-    if (!meta?.token) {
+  async revalidateConnection(ws, meta, validations = new Map()) {
+    if (!meta?.token || !meta.room) {
+      this.closeUnauthorizedSocket(ws);
       return null;
     }
 
-    const auth = await validateSession(this.env, meta.token);
+    // 仅同一次广播内相同凭据/房间共享在途校验；发送前与写入后广播必须分别读取最新状态。
+    const key = JSON.stringify([meta.token, meta.room.kind, meta.room.id]);
+    if (!validations.has(key)) {
+      validations.set(key, validateSession(this.env, meta.token, { room: meta.room }));
+    }
+    const auth = await validations.get(key);
     if (!auth.ok) {
       this.closeUnauthorizedSocket(ws);
       return null;
     }
-
-    const access = await authorizeRoom(
-      this.env.DB,
-      auth.session,
-      meta.room.kind,
-      meta.room.id
-    );
-    if (!access.ok) {
-      this.closeUnauthorizedSocket(ws);
-      return null;
-    }
-
-    const { room } = access;
 
     const nextMeta = socketMeta(
       meta.token,
@@ -118,7 +110,7 @@ export class ChannelRoom {
         userId: auth.session.userId,
         isAdmin: auth.session.isAdmin
       },
-      room
+      auth.room
     );
     this.connections.set(ws, nextMeta);
     ws.serializeAttachment(nextMeta);
@@ -136,21 +128,24 @@ export class ChannelRoom {
 
   async broadcast(packet) {
     const connections = [...this.connections.entries()];
-    const validated = await Promise.all(
-      connections.map(async ([socket, meta]) => ({
-        socket,
-        meta: await this.revalidateConnection(socket, meta)
-      }))
-    );
-
-    for (const { socket, meta } of validated) {
-      if (!meta) continue;
+    const validations = new Map();
+    await Promise.all(connections.map(async ([socket, meta]) => {
+      let currentMeta;
+      try {
+        currentMeta = await this.revalidateConnection(socket, meta, validations);
+      } catch {
+        // 单个收件人的存储读取失败不能阻止其他投递和提交后投影；失败连接本次不接收正文。
+        console.error(JSON.stringify({ message: 'room broadcast validation failed', roomId: Number(meta.room?.id || 0) }));
+        return;
+      }
+      if (!currentMeta) return;
+      // 各连接验完即发，不让一个慢 KV 读取拖延其他合法收件人的消息确认。
       try {
         socket.send(packet);
       } catch {
         this.connections.delete(socket);
       }
-    }
+    }));
   }
 
   runMessageProjections(room, message, replyToSenderId = null) {
@@ -380,21 +375,31 @@ export class ChannelRoom {
         return;
       }
 
-      const { message: saved, packet } = await submitRoomMessage(
+      if (payload.clientMessageId !== undefined && (typeof payload.clientMessageId !== 'string'
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.clientMessageId))) {
+        throw new MessageSubmissionError('clientMessageId 必须是 UUID');
+      }
+      const result = await submitRoomMessageIdempotent(
         this.env,
         currentMeta,
         payload
       );
-      await this.broadcast(packet);
+      if (!result.created) {
+        // 重试只向发送连接补确认，避免重复未读、桥接和其他客户端的新消息事件。
+        // 查询旧消息期间也可能撤权，补确认与新消息广播一样在发出正文前重新验证。
+        if (await this.revalidateConnection(ws, currentMeta)) ws.send(result.packet);
+        return;
+      }
+      await this.broadcast(result.packet);
       // 未读与外部桥接都属于提交后投影，异步执行以缩短 WebSocket 发送链路。
-      this.runMessageProjections(currentMeta.room, saved);
+      this.runMessageProjections(currentMeta.room, result.message, result.replyToSenderId);
     } catch (error) {
       if (
         error instanceof MessageSubmissionError ||
         error instanceof MessageDeletionError ||
         error instanceof MessagePinningError
       ) {
-        sendSocketError(ws, error.message);
+        sendSocketError(ws, error.message, payload.type === 'send' ? payload.clientMessageId : undefined);
         return;
       }
       console.error(JSON.stringify({
@@ -402,7 +407,7 @@ export class ChannelRoom {
         roomId: Number(meta.room?.id || 0),
         error: error instanceof Error ? error.message : String(error)
       }));
-      sendSocketError(ws, '消息操作失败');
+      sendSocketError(ws, '消息操作失败', payload.type === 'send' ? payload.clientMessageId : undefined);
     }
   }
 

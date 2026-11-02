@@ -29,6 +29,17 @@ After the socket is established, the Durable Object revalidates the session and
 room membership before accepting each incoming message and before delivering each
 broadcast to a connected socket.
 
+User status, device-session validity (when present), and room membership are read
+in one D1 query. KV is still read for every validation phase. Incoming-message
+validation is never reused for the post-write broadcast or a retry acknowledgement.
+Only identical token-and-room pairs within one broadcast share an in-flight
+validation; there is no cross-message authorization cache or TTL.
+
+Each socket receives the packet as soon as its own validation completes, rather
+than waiting for the slowest recipient. A failed storage read skips delivery to
+that recipient without disclosing content or preventing delivery to other
+recipients and post-commit projections.
+
 That means these changes take effect for active sockets as soon as the next
 message is sent to or from the room:
 
@@ -39,3 +50,6 @@ message is sent to or from the room:
 
 Sockets that no longer pass session or room checks are closed with a policy
 violation status and are removed from the room connection set.
+
+These checks observe the state returned by KV/D1; they do not make an authorization
+read and a later socket send atomic or strengthen KV's existing consistency model.

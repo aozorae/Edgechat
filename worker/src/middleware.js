@@ -13,7 +13,7 @@ export async function authMiddleware(c, next) {
   const management = path.startsWith('/api/admin/') || path === '/api/me/authorization' || path === '/api/auth/session';
   if (path.startsWith('/api/admin/') && !c.req.raw.headers.get('Authorization') && !c.req.raw.headers.get('Cookie')) return errorResponse('请先登录', 401);
   let result;
-  try { result = await validateSession(c.env, token, { management }); }
+  try { result = await validateSession(c.env, token, { management, profile: path === '/api/auth/session' }); }
   catch (error) {
     if (!management) throw error;
     console.error('management_authorization_unavailable');

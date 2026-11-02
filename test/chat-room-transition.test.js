@@ -156,6 +156,7 @@ test("网页发送回复字段，并在原消息删除后保留已删除引用�
 	assert.equal(await room.sendMessage([], 10), true);
 	assert.deepEqual(sockets[0].sentFrames.at(-1), {
 		type: "send",
+		clientMessageId: room.messages.value.at(-1).clientMessageId,
 		content: "回复正文",
 		attachment: null,
 		mentionUserIds: [],
@@ -164,4 +165,7 @@ test("网页发送回复字段，并在原消息删除后保留已删除引用�
 
 	sockets[0].emitMessage({ type: "message_deleted", messageId: 10 });
 	assert.deepEqual(room.messages.value[0].replyTo, { id: 10, deleted: true });
+	sockets[0].emitMessage({ type: "message", message: {
+		id: 12, sender: { id: 7, kind: "local" }, clientMessageId: sockets[0].sentFrames.at(-1).clientMessageId,
+	} });
 });

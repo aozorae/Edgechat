@@ -662,6 +662,10 @@ VALUES ('site_icon_url', '');
 CREATE INDEX IF NOT EXISTS idx_messages_channel_created
   ON messages(channel_id, id DESC);
 
+-- 会话列表按创建时间取最新存活消息，避免每个房间扫描整段历史。
+CREATE INDEX IF NOT EXISTS idx_messages_channel_live_time
+  ON messages(channel_id, created_at DESC) WHERE deleted_at IS NULL;
+
 CREATE INDEX IF NOT EXISTS idx_messages_sender_created
   ON messages(sender_id, id DESC);
 

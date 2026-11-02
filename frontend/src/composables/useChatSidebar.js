@@ -161,13 +161,11 @@ export function useChatSidebar({ applyActiveChannel, selectDm, sidebarApi = api 
 		if (item.kind === "dm") {
 			selectDm(item.source);
 			markConversationRead(item.kind, item.id);
-			void sidebarApi.markRoomRead(item.kind, item.id).catch(() => {});
 			return;
 		}
 
 		applyActiveChannel(item.source);
 		markConversationRead(item.kind, item.id);
-		void sidebarApi.markRoomRead(item.kind, item.id).catch(() => {});
 	}
 
 	return {

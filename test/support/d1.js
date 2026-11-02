@@ -1,4 +1,5 @@
 export function createD1Adapter(database) {
+  let batchTail = Promise.resolve();
 	function prepare(sql, bindings = []) {
     return {
       bind(...values) {
@@ -20,31 +21,38 @@ export function createD1Adapter(database) {
       },
       async run() {
         const statement = database.prepare(sql);
-        statement.run(bindings);
+        statement.bind(bindings);
+        const results = [];
+        while (statement.step()) results.push(statement.getAsObject());
         statement.free();
         const changes = database.getRowsModified();
         const lastRow = database.exec('SELECT last_insert_rowid() AS id');
         const lastRowId = Number(lastRow[0]?.values?.[0]?.[0] || 0);
-        return { meta: { changes, last_row_id: lastRowId } };
+        return { results, meta: { changes, last_row_id: lastRowId } };
       }
     };
   }
 
   return {
     prepare,
-    async batch(statements) {
-      database.run('BEGIN');
-      try {
-        const results = [];
-        for (const statement of statements) {
-          results.push(await statement.run());
+    batch(statements) {
+      // 与 D1 一样串行执行事务，避免并发发送测试在同一个 SQLite 连接中嵌套 BEGIN。
+      const pending = batchTail.then(async () => {
+        database.run('BEGIN');
+        try {
+          const results = [];
+          for (const statement of statements) {
+            results.push(await statement.run());
+          }
+          database.run('COMMIT');
+          return results;
+        } catch (error) {
+          database.run('ROLLBACK');
+          throw error;
         }
-        database.run('COMMIT');
-        return results;
-      } catch (error) {
-        database.run('ROLLBACK');
-        throw error;
-      }
+      });
+      batchTail = pending.catch(() => {});
+      return pending;
     }
   };
 }

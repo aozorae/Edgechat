@@ -95,6 +95,13 @@ test("full schema executes baseline migration plan into ledger and passes system
   });
   db.exec(plan.sql);
   assert.ok(plan.decisions.every(({ action }) => action === "baseline"));
+  assert.deepEqual(plan.decisions.find(({ id }) => id === "2026-04-05-private-groups"), {
+    id: "2026-04-05-private-groups", action: "baseline"
+  });
+  assert.doesNotMatch(plan.sql, /DROP TABLE channels|CREATE TABLE channels_new|ALTER TABLE channel_members/);
+  // 基线不能重建 channels；实际建号验证系统群触发器仍可用，而不只检查对象存在。
+  db.exec("INSERT INTO users (username, password_hash, password_salt, display_name) VALUES ('baseline-probe', 'hash', 'salt', 'Baseline probe');");
+  assert.equal(rows(db, "SELECT COUNT(*) AS count FROM channel_members cm JOIN users u ON u.id = cm.user_id JOIN channels c ON c.id = cm.channel_id WHERE u.username = 'baseline-probe' AND c.name = 'general'")[0].count, 1);
   assert.equal((await inspectSchema(async (sql) => rows(db, sql), manifest)).status, "ok");
   const namespace = (service) => ({
     idFromName: (name) => name,

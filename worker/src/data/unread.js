@@ -1,32 +1,26 @@
 import { activeUserSql } from "../user-status.js";
 
-async function resolveReadableMessageId(db, channelId, messageId = null) {
+export async function markRoomRead(db, { channelId, userId, messageId = null }) {
 	const filters = ["channel_id = ?", "deleted_at IS NULL"];
-	const binds = [Number(channelId)];
+	const binds = [Number(channelId), Number(userId), Number(channelId)];
 	if (messageId !== null && messageId !== undefined) {
 		filters.push("id <= ?");
 		binds.push(Number(messageId));
 	}
 	const { results } = await db
-		.prepare(`SELECT COALESCE(MAX(id), 0) AS message_id FROM messages WHERE ${filters.join(" AND ")}`)
-		.bind(...binds)
-		.all();
-	return Number(results[0]?.message_id || 0);
-}
-
-export async function markRoomRead(db, { channelId, userId, messageId = null }) {
-	const lastReadMessageId = await resolveReadableMessageId(db, channelId, messageId);
-	await db
 		.prepare(
 			`INSERT INTO message_reads (channel_id, user_id, last_read_message_id, updated_at)
-			 VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+			 SELECT ?, ?, COALESCE(MAX(id), 0), CURRENT_TIMESTAMP
+			 FROM messages WHERE ${filters.join(" AND ")}
 			 ON CONFLICT(channel_id, user_id) DO UPDATE
 			 SET last_read_message_id = MAX(message_reads.last_read_message_id, excluded.last_read_message_id),
-			     updated_at = CURRENT_TIMESTAMP`,
+			     updated_at = CASE WHEN excluded.last_read_message_id > message_reads.last_read_message_id
+			                       THEN excluded.updated_at ELSE message_reads.updated_at END
+			 RETURNING last_read_message_id`,
 		)
-		.bind(Number(channelId), Number(userId), lastReadMessageId)
-		.run();
-	return lastReadMessageId;
+		.bind(...binds)
+		.all();
+	return Number(results[0].last_read_message_id);
 }
 
 export async function countUnreadMessages(db, { channelId, userId }) {

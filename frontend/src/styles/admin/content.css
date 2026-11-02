@@ -149,8 +149,7 @@
 }
 
 .admin-page .panel.ui-surface,
-.admin-page .admin-update-panel.ui-surface,
-.admin-page .registration-invite-manager.ui-surface {
+.admin-page .admin-update-panel.ui-surface {
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -197,8 +196,7 @@
   }
 
   .admin-page .panel.ui-surface,
-  .admin-page .admin-update-panel.ui-surface,
-  .admin-page .registration-invite-manager.ui-surface {
+  .admin-page .admin-update-panel.ui-surface {
     padding: var(--admin-space-sm);
   }
 }

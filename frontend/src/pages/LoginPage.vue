@@ -211,21 +211,6 @@ async function submit(event) {
 .input-wrapper {
   position: relative;
   width: 100%;
-  opacity: 0;
-  animation: slideInRight 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.input-wrapper:first-of-type {
-  animation-delay: 1.2s;
-}
-
-.input-wrapper:last-of-type {
-  animation-delay: 1.4s;
-}
-
-@keyframes slideInRight {
-  0% { opacity: 0; transform: translateX(32px); }
-  100% { opacity: 1; transform: translateX(0); }
 }
 
 .custom-cursor {
@@ -282,13 +267,6 @@ async function submit(event) {
   margin: 8px auto 0;
   letter-spacing: 2px;
   padding: 0 4px 8px;
-  opacity: 0;
-  animation: riseUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 1.6s forwards;
-}
-
-@keyframes riseUp {
-  0% { opacity: 0; transform: translateY(24px); }
-  100% { opacity: 1; transform: translateY(0); }
 }
 
 .login-btn:hover:not(:disabled) {
@@ -299,7 +277,6 @@ async function submit(event) {
 .login-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  animation: none;
 }
 
 .error-text {
@@ -315,5 +292,28 @@ async function submit(event) {
   right: max(16px, env(safe-area-inset-right));
   z-index: 2;
   color: var(--auth-ink, #2c4a6e);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page::before,
+  .welcome-text,
+  .brand-name {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .login-btn {
+    transition: none;
+  }
+
+  .login-btn:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .custom-cursor.visible {
+    animation: none;
+    opacity: 1;
+  }
 }
 </style>

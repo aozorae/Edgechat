@@ -248,6 +248,17 @@ export async function getMessageById(env, messageId) {
 	return results[0] ? mapDecryptedMessage(env, results[0]) : null;
 }
 
+export async function getPinnedMessage(env, channelId) {
+	// 直接投影置顶消息，避免先读取 ID 再发起第二次数据库往返。
+	const { results } = await env.DB
+		.prepare(`${MESSAGE_SELECT}
+		 WHERE m.id = (SELECT message_id FROM channel_pins WHERE channel_id = ?)
+		   AND m.channel_id = ? AND m.deleted_at IS NULL LIMIT 1`)
+		.bind(Number(channelId), Number(channelId))
+		.all();
+	return results[0] ? mapDecryptedMessage(env, results[0]) : null;
+}
+
 export async function getMessageBySource(env, source, sourceMessageId) {
 	const { results } = await env.DB
 		.prepare(
@@ -260,8 +271,8 @@ export async function getMessageBySource(env, source, sourceMessageId) {
 	return results[0] ? mapDecryptedMessage(env, results[0]) : null;
 }
 
-export async function getMessageByClientId(env, channelId, senderId, clientMessageId) {
-	const { results } = await env.DB
+function messageByClientIdStatement(db, channelId, senderId, clientMessageId) {
+	return db
 		.prepare(
 			`${MESSAGE_SELECT}
 			 WHERE m.channel_id = ?
@@ -270,8 +281,11 @@ export async function getMessageByClientId(env, channelId, senderId, clientMessa
 			   AND m.deleted_at IS NULL
 			 LIMIT 1`,
 		)
-		.bind(Number(channelId), Number(senderId), String(clientMessageId))
-		.all();
+		.bind(Number(channelId), Number(senderId), String(clientMessageId));
+}
+
+export async function getMessageByClientId(env, channelId, senderId, clientMessageId) {
+	const { results } = await messageByClientIdStatement(env.DB, channelId, senderId, clientMessageId).all();
 	return results[0] ? mapDecryptedMessage(env, results[0]) : null;
 }
 
@@ -445,7 +459,7 @@ async function persistMessage(env, {
 	const normalizedReplyToMessageId = replyToMessageId ? Number(replyToMessageId) : null;
 	const normalizedReplyToSenderId = replyToSenderId ? Number(replyToSenderId) : null;
 	try {
-		const result = await env.DB
+		const insert = env.DB
 				.prepare(
 					`INSERT INTO messages (
 					   channel_id, sender_id, content, attachment_key, attachment_name,
@@ -489,8 +503,16 @@ async function persistMessage(env, {
 								bridgeDelivery?.createdAt || null,
 								sourceInstance,
 								bridgeDelivery?.targetRevision ?? null,
-						)
-			.run();
+						);
+		if (normalizedClientMessageId) {
+			// 原子批次省去写入后的远程回查；用唯一业务键定位，不依赖跨语句的 last_insert_rowid 状态。
+			const [, selected] = await env.DB.batch([
+				insert,
+				messageByClientIdStatement(env.DB, channelId, normalizedSenderId, normalizedClientMessageId),
+			]);
+			return { message: await mapDecryptedMessage(env, selected.results[0]), created: true };
+		}
+		const result = await insert.run();
 		return { message: await getMessageById(env, result.meta.last_row_id), created: true };
 		} catch (error) {
 			if (bridgeDelivery && String(error).includes("UNIQUE")) {

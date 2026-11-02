@@ -52,7 +52,8 @@ if (customBg) {
   document.body.style.background = customBg;
 }
 
-initializeI18n().then(() => store.initialize()).finally(() => {
+initializeI18n().finally(() => {
+  void store.initialize();
   const app = createApp(App);
   app.use(router);
   app.mount('#app');

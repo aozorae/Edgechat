@@ -159,12 +159,12 @@ function handleRoomAccessRevoked(room) {
 }
 
 const {
-  messages, pinnedMessage, highlightedMessageId, loading, wsStatus, composerText, pendingAttachments, sending,
+  messages, pinnedMessage, highlightedMessageId, loading, refreshing, refreshFailed, wsStatus, composerText, pendingAttachments, sending,
   messagesEl,
 	  loadMessages, activateRoom, deactivateRoom, pauseRoom, disconnectSocket, sendMessage, sendVoiceMessage, deleteMessage,
 	  pinMessage, unpinMessage, revealPinnedMessage,
 	  revealMessage,
-  uploadAttachment, clearAttachment, retryAttachment, loadOlder
+  uploadAttachment, clearAttachment, retryAttachment, retryMessage, loadOlder
 } = useChatRoom({
   activeRoom,
   session,
@@ -801,10 +801,14 @@ watch(
           @unpin="unpinMessage(pinnedMessage.id)"
         />
 
+        <div v-if="refreshing || refreshFailed" class="messages-refresh-status" role="status">
+          <span>{{ refreshing ? t('common.refreshing') : t('chat.refreshFailed') }}</span>
+          <button v-if="refreshFailed" type="button" @click="loadMessages()">{{ t('common.retry') }}</button>
+        </div>
         <section ref="messagesEl" class="chat-messages">
-          <button v-if="messages.length" type="button" class="load-more-btn" @click="loadOlder">{{ t('chat.loadEarlier') }}</button>
-          <div v-if="loading" class="messages-hint">{{ t('chat.loadingMessages') }}</div>
-          <div v-else-if="!messages.length" class="messages-hint">{{ t('chat.noMessages') }}</div>
+          <button v-if="messages.length" type="button" class="load-more-btn" :disabled="loading" @click="loadOlder">{{ t('chat.loadEarlier') }}</button>
+          <div v-if="loading && !refreshing" class="messages-hint">{{ t('chat.loadingMessages') }}</div>
+          <div v-else-if="!messages.length && !loading && !refreshFailed" class="messages-hint">{{ t('chat.noMessages') }}</div>
 
           <MessageList
             :messages="messages"
@@ -812,6 +816,7 @@ watch(
             :is-direct="activeRoom.kind === 'dm'"
             :highlighted-message-id="highlightedMessageId"
             @profile="openSenderProfile"
+            @retry="retryMessage"
             @reveal="revealMessage"
             @contextmenu="openMessageContextMenu"
             @long-press="startMessageLongPress"
@@ -1439,6 +1444,27 @@ watch(
   padding: 64px 24px;
   color: var(--chat-subtle);
   font-size: 14px;
+}
+
+.messages-refresh-status {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  color: var(--chat-subtle);
+  font-size: 12px;
+}
+
+.messages-refresh-status button {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--chat-ink);
+  font: inherit;
+  cursor: pointer;
 }
 
 .chat-empty {

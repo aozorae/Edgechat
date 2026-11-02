@@ -157,7 +157,7 @@ To specify a key manually, create a GitHub Repository Secret named `EDGECHAT_ENC
 
 The first deployment adopts this value directly.
 
-To enable automatic incremental rotation for an existing Worker, manually run `Deploy Worker` and check `rotate_encryption_key`. The workflow adds only one versioned key Secret and switches the active key ID to the new version; all old Secrets and the old JSON keyring remain unchanged. New messages use the new key, while old ciphertext continues to be decrypted with the key ID in its own envelope.
+To enable automatic incremental rotation for an existing Worker, manually run `00 Deploy Worker` and check `rotate_encryption_key`. The workflow adds only one versioned key Secret and switches the active key ID to the new version; all old Secrets and the old JSON keyring remain unchanged. New messages use the new key, while old ciphertext continues to be decrypted with the key ID in its own envelope.
 
 `apply_encryption_keyring` is a fallback manual override entry point. When using it, the Repository Secret must contain the complete JSON keyring. `keys` must retain every old key ID still referenced by historical ciphertext, then add the new key and update `activeKeyId`.
 
@@ -189,7 +189,9 @@ Messages are retained for **15 days** by default, then automatically deleted in 
 
 Using the GitHub Actions workflow included in the repository is recommended for deployment and subsequent updates. `Sync Upstream` checks twice daily, merges upstream releases marked with the `EdgeChat-Update: stable` / `security` commit trailer, and explicitly dispatches deployment. See the [update guide](https://echat.azora.top/en/guide/updating-fork) for setup and token permissions, and the [deployment guide](https://echat.azora.top/en/guide/actions-deploy) for `MESSAGE_RETENTION_DAYS`.
 
-After completing the Cloudflare authorization and repository configuration described in the documentation, you can manually run `Deploy Worker`, or trigger deployment by pushing code to the `master` or `main` branch. The workflow file is `.github/workflows/deploy-worker.yml`.
+After forking, open **Actions** in your own repository, enable workflows when GitHub prompts you, then select **`00 Deploy Worker`** near the top of the list and click **`Run workflow`**. The `00` prefix is inherited by forks for default name sorting; it does not depend on upstream pin settings. No other workflow is needed to deploy the site.
+
+After completing the Cloudflare authorization and repository configuration described in the documentation, you can manually run `00 Deploy Worker`, or trigger deployment by pushing code to the `master` or `main` branch. The workflow file is `.github/workflows/deploy-worker.yml`.
 
 **[Quick Start](https://echat.azora.top/guide/getting-started.html) · [GitHub Actions Deployment Guide](https://echat.azora.top/guide/actions-deploy.html)**
 

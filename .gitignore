@@ -21,6 +21,9 @@ frontend/public/vendor/vditor/
 .tmp/
 worker/src/generated/
 
+# 私有视频工程与输出，不随产品源码发布。
+/video/
+
 # Android local/build outputs
 android/.gradle/
 android/.kotlin/

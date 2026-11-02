@@ -203,16 +203,35 @@ test('用户管理通过独立弹窗选择快捷、自定义或永久封禁时�
   assert.match(adminApiSource, /session_version = session_version \+ 1/);
 });
 
-test('注册邀请页限制内容宽度并用独立卡片组织创建工具与链接列表', () => {
+test('注册邀请页采用内容宽度驱动的紧凑表单和单面板分隔列表', () => {
   assert.match(invitesSource, /admin-invites-page/);
   assert.match(invitesPageStyles, /max-width: 1120px/);
-  assert.match(userCreatorSource, /admin-user-creator__identity-grid/);
+  assert.match(userCreatorSource, /admin-user-creator__form--with-group/);
   assert.match(userCreatorStyles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(inviteManagerSource, /invite-create-panel/);
+  assert.match(userCreatorStyles, /@container user-creator \(min-width: 56rem\)/);
+  assert.match(userCreatorStyles, /@container user-creator \(max-width: 32rem\)/);
+  assert.doesNotMatch(userCreatorSource, /class="panel admin-user-creator"/);
+  assert.doesNotMatch(inviteManagerSource, /invite-create-panel|tone="soft"/);
+  assert.match(inviteManagerSource, /<article[\s\S]*?class="admin-invite-card"/);
   assert.match(inviteManagerSource, /t\('invites\.createdCount', \{ count: invites\.length \}\)/);
   assert.match(inviteManagerSource, /admin-invite-card__status/);
-  assert.match(inviteManagerStyles, /border: 1px solid var\(--admin-border-strong\)/);
-  assert.doesNotMatch(inviteManagerStyles, /max-height: 320px|border-block-start: 1px solid var\(--admin-border\);\s*border-radius: 0/);
+  assert.match(inviteManagerStyles, /\.admin-invite-card \+ \.admin-invite-card\s*\{\s*border-block-start:/);
+  assert.doesNotMatch(inviteManagerStyles, /max-height: 320px|\.admin-invite-card\.ui-surface/);
+});
+
+test('紧凑邀请保留可见标签、完整链接、权限门禁和移动触控尺寸', () => {
+  assert.match(inviteManagerSource, /<span>{{ t\('invites\.noteLabel'\) }}<\/span>/);
+  assert.match(inviteManagerSource, /<span>{{ t\('invites\.maxUses'\) }}<\/span>/);
+  assert.match(inviteManagerSource, /:title="inviteLinkUrl\(invite\.token\)"/);
+  assert.match(inviteManagerSource, /v-if="can\('invites\.create'\)"/);
+  assert.match(inviteManagerSource, /invite\.isAvailable && can\('invites\.revoke'\)/);
+  assert.match(inviteManagerSource, /window\.confirm\(t\('invites\.confirmRevoke'\)\)/);
+  assert.match(inviteManagerSource, /aria-live="polite"/);
+  assert.match(inviteManagerSource, /class="error-text" role="alert"/);
+  assert.match(inviteManagerStyles, /@media \(max-width: 40rem\), \(pointer: coarse\)/);
+  assert.match(inviteManagerStyles, /width: 44px;\s*height: 44px;/);
+  assert.match(inviteManagerStyles, /overflow-wrap: anywhere/);
+  assert.match(userCreatorStyles, /min-height: 44px/);
 });
 
 test('网站设置只读取站点配置且不重复展示统计信息', () => {

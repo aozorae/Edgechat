@@ -4,7 +4,6 @@ import {
   listVisibleChannels
 } from '../data/channels.js';
 import {
-  ensureGeneralChannelMembership,
   isGeneralChannel,
   isReservedGeneralChannelName
 } from '../data/general-channel.js';
@@ -56,7 +55,6 @@ async function ensureValidInvitees(db, userIds) {
 export function registerChannelRoutes(app) {
   app.get('/api/channels', async (c) => {
     const session = c.get('session');
-    await ensureGeneralChannelMembership(c.env.DB, session.userId);
     const channels = await listVisibleChannels(c.env.DB, session.userId);
     return c.json({
       channels,

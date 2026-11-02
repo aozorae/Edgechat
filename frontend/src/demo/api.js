@@ -68,6 +68,16 @@ function bootstrapPayload() {
   };
 }
 
+function markDemoRoomRead(kind, roomId) {
+  const room = kind === 'dm'
+    ? demoState.dms.find((dm) => Number(dm.id) === Number(roomId))
+    : findDemoChannel(roomId);
+  if (room) {
+    room.unreadCount = 0;
+    room.mentionUnreadCount = 0;
+  }
+}
+
 function contactsPayload() {
   return {
     users: demoState.users
@@ -404,19 +414,14 @@ async function handleDemoRequest(path, options = {}) {
     const key = roomKey(kind, roomId);
     const allMessages = demoState.messages[key] || [];
     const filtered = before ? allMessages.filter((message) => Number(message.id) < before) : allMessages;
+    if (!before && filtered.length) markDemoRoomRead(kind, roomId);
     return {
       messages: cloneDemo(filtered.slice(-30)),
       pinnedMessage: cloneDemo(demoState.pinnedMessages[key] || null)
     };
   }
   if (method === 'POST' && pathname === '/messages/read') {
-    const room = body.kind === 'dm'
-      ? demoState.dms.find((dm) => Number(dm.id) === Number(body.roomId))
-      : findDemoChannel(body.roomId);
-    if (room) {
-      room.unreadCount = 0;
-      room.mentionUnreadCount = 0;
-    }
+    markDemoRoomRead(body.kind, body.roomId);
     return { ok: true };
   }
   if (method === 'POST' && pathname === '/dm/open') {

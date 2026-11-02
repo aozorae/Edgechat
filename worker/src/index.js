@@ -56,7 +56,6 @@ import { Scheduler } from './do/Scheduler.js';
 import { UserInbox } from './do/UserInbox.js';
 import { forwardInboxConnection, forwardRoomConnection } from './do-bridge.js';
 import { runScheduledGc } from './gc.js';
-import { isUserDisabled } from './user-status.js';
 import { updateCurrentDeviceSessionVersion } from './mobile-session.js';
 import {
   errorCodeForStatus,
@@ -186,30 +185,8 @@ registerLoginNetworkRoutes(app);
 
 app.get('/api/auth/session', async (c) => {
   const session = c.get('session');
-  const user = await c.env.DB.prepare(
-    `SELECT display_name, avatar_key, bio, is_disabled, disabled_until
-     FROM users
-     WHERE id = ?
-       AND deleted_at IS NULL
-     LIMIT 1`
-  )
-    .bind(session.userId)
-    .all();
-
-  if (!user.results[0] || isUserDisabled(user.results[0])) {
-    await deleteSession(c.env, session.token);
-    return errorResponse('账号已不可用', 401);
-  }
-
-  const freshSession = {
-    ...session,
-    displayName: user.results[0].display_name,
-    bio: user.results[0].bio,
-    avatarUrl: user.results[0].avatar_key ? `/files/${encodeURIComponent(user.results[0].avatar_key)}` : ''
-  };
-  await putSession(c.env, freshSession);
   c.header('Set-Cookie', sessionCookie(c.req.raw, session.token));
-  return c.json({ session: freshSession });
+  return c.json({ session });
 });
 
 app.post('/api/auth/logout', async (c) => {
@@ -282,7 +259,7 @@ app.get('/api/users', async (c) => {
 
 app.get('/api/bootstrap', async (c) => {
   const session = c.get('session');
-  await ensureGeneralChannelMembership(c.env.DB, session.userId);
+  // schema/迁移负责历史回填，建号路径与触发器负责新增成员；初始化不再重复写入。
   const [users, channels, dms] = await Promise.all([
     listActiveUsers(c.env.DB, session.userId),
     listVisibleChannels(c.env.DB, session.userId),

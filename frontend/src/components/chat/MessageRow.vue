@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { Clock3, RotateCw } from "@lucide/vue";
 import { formatTime, t } from "../../i18n.js";
 import UiAvatar from "../ui/Avatar.vue";
 import MessageAttachment from "./MessageAttachment.vue";
@@ -17,6 +18,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
 	profile: [sender: MessageSender];
+	retry: [clientMessageId: string];
 	reveal: [messageId: number | string | null | undefined];
 	contextmenu: [event: MouseEvent, message: MessageView];
 	"long-press": [event: PointerEvent, message: MessageView];
@@ -44,8 +46,8 @@ const time = computed(() => props.msg.createdAt ? formatTime(props.msg.createdAt
 		<div
 			class="message-bubble"
 			:class="{ 'message-bubble--with-attachment': msg.attachment, 'message-bubble--highlighted': highlighted }"
-			@contextmenu="emit('contextmenu', $event, msg)"
-			@pointerdown="emit('long-press', $event, msg)"
+			@contextmenu="!msg.sendStatus && emit('contextmenu', $event, msg)"
+			@pointerdown="!msg.sendStatus && emit('long-press', $event, msg)"
 			@pointermove="emit('track-press', $event)"
 			@pointerup="emit('cancel-press')"
 			@pointercancel="emit('cancel-press')"
@@ -64,7 +66,14 @@ const time = computed(() => props.msg.createdAt ? formatTime(props.msg.createdAt
 			/>
 			<MessageMarkdown v-if="msg.content" :content="msg.content" :mentions="msg.mentions" :current-user-id="currentUserId" />
 			<MessageAttachment v-if="msg.attachment" :attachment="msg.attachment" />
-			<span class="message-time">{{ time }}</span>
+			<div v-if="msg.sendStatus" class="message-delivery" role="status">
+				<template v-if="msg.sendStatus === 'pending'"><Clock3 :size="13" /><span>{{ t('chat.messagePending') }}</span></template>
+				<template v-else>
+					<span>{{ msg.sendError || t('chat.messageUnconfirmed') }}</span>
+					<button type="button" :aria-label="t('chat.retryMessage')" :title="t('chat.retryMessage')" @click="emit('retry', msg.clientMessageId!)"><RotateCw :size="16" /></button>
+				</template>
+			</div>
+			<span v-else class="message-time">{{ time }}</span>
 		</div>
 	</article>
 </template>
@@ -144,6 +153,31 @@ const time = computed(() => props.msg.createdAt ? formatTime(props.msg.createdAt
   user-select: none;
 }
 .message-bubble__reply { margin-bottom: 5px; }
+.message-delivery {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--chat-muted);
+}
+.message-delivery svg { flex-shrink: 0; }
+.message-delivery button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--chat-accent);
+  cursor: pointer;
+}
+.message-delivery button:hover { background: var(--chat-paper); }
+.message-delivery button:focus-visible { outline: 2px solid var(--chat-accent); }
 @media (max-width: 960px) {
   .message-row { gap: 8px; margin-bottom: 12px; }
   .message-bubble { max-width: calc(100% - 44px); }

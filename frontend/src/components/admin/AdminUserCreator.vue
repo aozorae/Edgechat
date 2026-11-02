@@ -42,35 +42,32 @@ async function submitUser() {
 </script>
 
 <template>
-  <UiSurface class="panel admin-user-creator">
+  <UiSurface class="admin-user-creator">
     <h3 class="panel-title">{{ t('userCreator.title') }}</h3>
-    <p v-if="error || rolesError" class="error-text">{{ error || rolesError }}</p>
+    <p v-if="error || rolesError" class="error-text" role="alert">{{ error || rolesError }}</p>
     <p v-else-if="success" class="success-text" role="status">{{ success }}</p>
-    <form class="admin-user-creator__form" @submit.prevent="submitUser">
-      <div class="admin-user-creator__identity-grid">
-        <label class="field">
-          <span>{{ t('auth.username') }}</span>
-          <input v-model.trim="form.username" autocomplete="off" />
-        </label>
-        <label class="field">
-          <span>{{ t('auth.displayName') }}</span>
-          <input v-model.trim="form.displayName" autocomplete="off" />
-        </label>
-      </div>
+    <form class="admin-user-creator__form" :class="{ 'admin-user-creator__form--with-group': store.session?.isSuperAdmin }" @submit.prevent="submitUser">
+      <label class="field">
+        <span>{{ t('auth.username') }}</span>
+        <input v-model.trim="form.username" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>{{ t('auth.displayName') }}</span>
+        <input v-model.trim="form.displayName" autocomplete="off" />
+      </label>
       <label class="field">
         <span>{{ t('userCreator.initialPassword') }}</span>
         <input v-model="form.password" type="password" autocomplete="new-password" />
       </label>
-      <div class="admin-user-creator__actions">
-        <div v-if="store.session?.isSuperAdmin" class="field"><span>{{ t('rbac.group') }}</span>
-          <UserGroupSelect v-model="roleId" :roles="roles" :has-more="hasMore" :loading="rolesLoading" @more="loadMore" />
-        </div>
-        <UiButton type="submit" :disabled="submitting || !canSubmit">
-          {{ submitting ? t('common.creating') : t('userCreator.title') }}
-        </UiButton>
+      <div v-if="store.session?.isSuperAdmin" class="field admin-user-creator__group">
+        <span>{{ t('rbac.group') }}</span>
+        <UserGroupSelect v-model="roleId" :roles="roles" :has-more="hasMore" :loading="rolesLoading" @more="loadMore" />
       </div>
+      <UiButton type="submit" :disabled="submitting || !canSubmit">
+        {{ submitting ? t('common.creating') : t('userCreator.title') }}
+      </UiButton>
     </form>
   </UiSurface>
 </template>
 
-<style scoped src="../../styles/admin/user-creator.css"></style>
+<style src="../../styles/admin/user-creator.css"></style>

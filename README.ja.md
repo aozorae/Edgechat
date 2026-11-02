@@ -148,7 +148,7 @@ GitHub Actions はサーバーサイド暗号化の Worker Secrets を管理し�
 
 初回デプロイではこの値がそのまま採用されます。
 
-既存 Worker で自動的に増分ローテーションするには、`Deploy Worker` を手動実行し、`rotate_encryption_key` にチェックを入れます。ワークフローはバージョン付きの鍵 Secret を 1 つだけ追加し、active key ID を新しいバージョンへ切り替えます。すべての旧 Secret と旧 JSON 鍵リングは変更されません。新しいメッセージには新しい鍵を使用し、旧暗号文は各エンベロープの key ID に対応する鍵で復号します。
+既存 Worker で自動的に増分ローテーションするには、`00 Deploy Worker` を手動実行し、`rotate_encryption_key` にチェックを入れます。ワークフローはバージョン付きの鍵 Secret を 1 つだけ追加し、active key ID を新しいバージョンへ切り替えます。すべての旧 Secret と旧 JSON 鍵リングは変更されません。新しいメッセージには新しい鍵を使用し、旧暗号文は各エンベロープの key ID に対応する鍵で復号します。
 
 `apply_encryption_keyring` は手動で上書きするための予備の入口です。使用時は Repository Secret に完全な JSON 鍵リングを指定し、`keys` に履歴の暗号文から引き続き参照されるすべての旧 key ID を残したうえで、新しい鍵を追加し `activeKeyId` を更新する必要があります。
 
@@ -180,7 +180,9 @@ GitHub Actions はサーバーサイド暗号化の Worker Secrets を管理し�
 
 デプロイとその後の更新には、リポジトリに組み込まれた GitHub Actions ワークフローの利用を推奨します。`Sync Upstream` は毎日 2 回確認し、コミット末尾の `EdgeChat-Update: stable` / `security` が付いた上流リリースをマージして明示的にデプロイを起動します。初回設定とトークン権限は[更新ガイド](https://echat.azora.top/en/guide/updating-fork)、`MESSAGE_RETENTION_DAYS` は[デプロイガイド](https://echat.azora.top/en/guide/actions-deploy)を参照してください。
 
-ドキュメントに従って Cloudflare の認証とリポジトリ設定を完了すると、`Deploy Worker` を手動実行できます。また、`master` または `main` ブランチにコードをプッシュしてデプロイをトリガーすることもできます。ワークフローファイルは `.github/workflows/deploy-worker.yml` です。
+Fork 後、自分のリポジトリの **Actions** を開き、GitHub の案内に従ってワークフローを有効にしてください。一覧の上部にある **`00 Deploy Worker`** を選択し、**`Run workflow`** をクリックします。`00` は名前順で上位に表示するための接頭辞として Fork に引き継がれ、元リポジトリのピン留め設定には依存しません。サイトのデプロイに他のワークフローの実行は不要です。
+
+ドキュメントに従って Cloudflare の認証とリポジトリ設定を完了すると、`00 Deploy Worker` を手動実行できます。また、`master` または `main` ブランチにコードをプッシュしてデプロイをトリガーすることもできます。ワークフローファイルは `.github/workflows/deploy-worker.yml` です。
 
 **[クイックスタート](https://echat.azora.top/guide/getting-started.html) · [GitHub Actions デプロイチュートリアル](https://echat.azora.top/guide/actions-deploy.html)**
 

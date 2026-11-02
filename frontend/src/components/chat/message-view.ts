@@ -27,6 +27,9 @@ export type MessageAttachmentView = {
 export type MessageView = {
 	id: number | string;
 	sender: MessageSender;
+	clientMessageId?: string;
+	sendStatus?: "pending" | "failed";
+	sendError?: string;
 	content?: string;
 	createdAt?: string;
 	mentions?: MessageMention[];

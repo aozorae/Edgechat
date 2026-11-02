@@ -105,63 +105,53 @@ onMounted(loadInvites);
 </script>
 
 <template>
-  <section class="registration-invite-manager">
+  <UiSurface class="registration-invite-manager">
     <header class="registration-invite-manager__heading">
       <h3>{{ t('invites.title') }}</h3>
     </header>
-    <p v-if="error" class="error-text">{{ error }}</p>
+    <p v-if="error" class="error-text" role="alert">{{ error }}</p>
 
-    <UiSurface v-if="can('invites.create')" class="invite-create-panel">
-      <form class="invite-create-form" @submit.prevent="createInvite">
-        <label class="field invite-create-form__note">
-          <span class="sr-only">{{ t('invites.noteLabel') }}</span>
-          <input v-model.trim="inviteForm.note" :placeholder="t('invites.notePlaceholder')" />
-        </label>
-        <label class="field invite-create-form__uses">
-          <span class="sr-only">{{ t('invites.maxUses') }}</span>
-          <input
-            v-model.number="inviteForm.maxUses"
-            type="number"
-            min="1"
-            max="1000"
-            step="1"
-            :aria-label="t('invites.maxUses')"
-          />
-        </label>
-        <UiButton type="submit" :disabled="inviteSubmitting || !inviteMaxUsesValid">
-          {{ inviteSubmitting ? t('common.creating') : t('common.create') }}
-        </UiButton>
-      </form>
-    </UiSurface>
+    <form v-if="can('invites.create')" class="invite-create-form" @submit.prevent="createInvite">
+      <label class="field invite-create-form__note">
+        <span>{{ t('invites.noteLabel') }}</span>
+        <input v-model.trim="inviteForm.note" :placeholder="t('invites.notePlaceholder')" />
+      </label>
+      <label class="field invite-create-form__uses">
+        <span>{{ t('invites.maxUses') }}</span>
+        <input
+          v-model.number="inviteForm.maxUses"
+          type="number"
+          min="1"
+          max="1000"
+          step="1"
+          :aria-label="t('invites.maxUses')"
+        />
+      </label>
+      <UiButton type="submit" :disabled="inviteSubmitting || !inviteMaxUsesValid">
+        {{ inviteSubmitting ? t('common.creating') : t('common.create') }}
+      </UiButton>
+    </form>
 
-    <header class="invite-list-heading">
+    <header v-if="!loading" class="invite-list-heading">
       <h3>{{ t('invites.createdCount', { count: invites.length }) }}</h3>
     </header>
-    <p v-if="loading" class="muted">{{ t('invites.loading') }}</p>
+    <p v-if="loading" class="muted" role="status">{{ t('invites.loading') }}</p>
 
-    <div class="invite-list">
+    <div class="invite-list" :aria-busy="loading">
       <div v-if="!loading && !invites.length" class="muted">{{ t('invites.empty') }}</div>
-      <UiSurface
+      <article
         v-for="invite in invites"
         :key="invite.id"
-        tone="soft"
         class="admin-invite-card"
       >
-        <div class="admin-invite-card__head">
-          <strong>{{ invite.note || t('invites.unnamed') }}</strong>
-          <span class="admin-invite-card__status" :class="inviteStatusClass(invite)">
-            {{ inviteStatusLabel(invite) }}
-          </span>
-        </div>
-        <div v-if="invite.token" class="admin-invite-card__url">{{ inviteLinkUrl(invite.token) }}</div>
-        <p class="admin-invite-card__usage">
-          {{ t('invites.usage', { used: invite.usedCount, max: invite.maxUses }) }}
-          <span class="admin-invite-card__remaining">{{ t('invites.remaining', { count: invite.remainingUses }) }}</span>
-        </p>
-        <p v-if="invite.consumerDisplayName" class="admin-invite-card__consumer">
-          {{ t('invites.lastUsedBy', { name: invite.consumerDisplayName }) }}
-        </p>
-        <footer class="admin-invite-card__footer">
+        <div class="admin-invite-card__identity">
+          <div class="admin-invite-card__head">
+            <strong>{{ invite.note || t('invites.unnamed') }}</strong>
+            <span class="admin-invite-card__status" :class="inviteStatusClass(invite)">
+              {{ inviteStatusLabel(invite) }}
+            </span>
+          </div>
+          <div v-if="invite.token" class="admin-invite-card__url" :title="inviteLinkUrl(invite.token)">{{ inviteLinkUrl(invite.token) }}</div>
           <div class="admin-invite-card__provenance">
             <span>{{ invite.creatorDisplayName }}</span>
             <span aria-hidden="true">·</span>
@@ -172,33 +162,43 @@ onMounted(loadInvites);
               {{ formatInviteDate(invite.createdAt) }}
             </time>
           </div>
-          <div class="admin-invite-card__actions">
-            <UiButton
-              v-if="invite.token"
-              variant="secondary"
-              size="sm"
-              :title="copiedInviteId === invite.id ? t('invites.linkCopiedTitle') : t('invites.copyLinkTitle')"
-              @click="copyInvite(invite)"
-            >
-              <Copy :size="15" aria-hidden="true" />
-              {{ copiedInviteId === invite.id ? t('invites.copied') : t('invites.copy') }}
-            </UiButton>
-            <details v-if="invite.isAvailable && can('invites.revoke')" class="admin-invite-menu">
-              <summary class="admin-invite-menu__trigger" :title="t('common.moreActions')" :aria-label="t('common.moreActions')">
-                <Ellipsis :size="18" aria-hidden="true" />
-              </summary>
-              <div class="admin-invite-menu__popover">
-                <button type="button" @click="revokeInvite(invite, $event)">
-                  <Ban :size="15" aria-hidden="true" />
-                  {{ t('invites.revoke') }}
-                </button>
-              </div>
-            </details>
-          </div>
-        </footer>
-      </UiSurface>
+        </div>
+        <div class="admin-invite-card__details">
+          <p class="admin-invite-card__usage">
+            {{ t('invites.usage', { used: invite.usedCount, max: invite.maxUses }) }}
+            <span class="admin-invite-card__remaining">{{ t('invites.remaining', { count: invite.remainingUses }) }}</span>
+          </p>
+          <p v-if="invite.consumerDisplayName" class="admin-invite-card__consumer">
+            {{ t('invites.lastUsedBy', { name: invite.consumerDisplayName }) }}
+          </p>
+        </div>
+        <div class="admin-invite-card__actions">
+          <UiButton
+            v-if="invite.token"
+            variant="secondary"
+            size="sm"
+            aria-live="polite"
+            :title="copiedInviteId === invite.id ? t('invites.linkCopiedTitle') : t('invites.copyLinkTitle')"
+            @click="copyInvite(invite)"
+          >
+            <Copy :size="15" aria-hidden="true" />
+            {{ copiedInviteId === invite.id ? t('invites.copied') : t('invites.copy') }}
+          </UiButton>
+          <details v-if="invite.isAvailable && can('invites.revoke')" class="admin-invite-menu">
+            <summary class="admin-invite-menu__trigger" :title="t('common.moreActions')" :aria-label="t('common.moreActions')">
+              <Ellipsis :size="18" aria-hidden="true" />
+            </summary>
+            <div class="admin-invite-menu__popover">
+              <button type="button" @click="revokeInvite(invite, $event)">
+                <Ban :size="15" aria-hidden="true" />
+                {{ t('invites.revoke') }}
+              </button>
+            </div>
+          </details>
+        </div>
+      </article>
     </div>
-  </section>
+  </UiSurface>
 </template>
 
 <style scoped src="../../styles/admin/invite-manager.css"></style>

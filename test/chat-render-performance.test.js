@@ -17,7 +17,7 @@ async function componentUrl(name) {
 	for (const match of [...code.matchAll(/from (["'])([^"']+)\1/g)]) {
 		const specifier = match[2];
 		let target;
-		if (specifier === "vue") target = import.meta.resolve("vue");
+		if (!specifier.startsWith(".")) target = import.meta.resolve(specifier);
 		else if (specifier.endsWith("/MessageRow.vue")) target = await componentUrl("chat/MessageRow");
 		else if (specifier.endsWith(".vue")) {
 			// 子功能已有独立测试，此处只隔离 DOMPurify/音频等浏览器能力，不替换列表和行。
@@ -189,6 +189,39 @@ test("消息行保留本人/外部身份、私聊姓名隐藏、语言切换及�
 	} finally {
 		app.unmount();
 	}
+});
+
+test("乐观消息状态可见、禁用管理动作，重试事件贯通且确认不重建气泡", async () => {
+	const { default: MessageList } = await import(await componentUrl("chat/MessageList"));
+	const messages = ref([{ ...message("local:uuid"), clientMessageId: "uuid", sendStatus: "pending" }]);
+	const events = [];
+	const root = node("root");
+	const app = renderer.createApp({ setup: () => () => h(MessageList, {
+		messages: messages.value, currentUserId: 2, isDirect: true, highlightedMessageId: null,
+		onRetry: id => events.push(["retry", id]),
+		onContextmenu: () => events.push(["contextmenu"]),
+		onLongPress: () => events.push(["long-press"]),
+	}) });
+	app.mount(root);
+	try {
+		const bubble = byClass(root, "message-bubble")[0];
+		assert.equal(byClass(root, "message-delivery").length, 1);
+		assert.equal(byClass(root, "message-time").length, 0);
+		bubble.props.onContextmenu({});
+		bubble.props.onPointerdown({});
+		assert.deepEqual(events, []);
+		messages.value[0] = { ...messages.value[0], sendStatus: "failed", sendError: "Try again" };
+		await nextTick();
+		const button = descendants(root, element => element.type === "button")[0];
+		assert.ok(button.props["aria-label"]);
+		button.props.onClick();
+		assert.deepEqual(events, [["retry", "uuid"]]);
+		messages.value[0] = { ...message(12), clientMessageId: "uuid" };
+		await nextTick();
+		assert.equal(byClass(root, "message-bubble")[0], bubble);
+		assert.equal(byClass(root, "message-delivery").length, 0);
+		assert.equal(byClass(root, "message-time").length, 1);
+	} finally { app.unmount(); }
 });
 
 test("真实 Textarea 每次输入只读取一次高度，外部清空和恢复草稿仍自动增高", async () => {

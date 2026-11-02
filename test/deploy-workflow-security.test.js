@@ -15,6 +15,11 @@ function getStep(name) {
 	return workflow.slice(start, next === -1 ? undefined : next);
 }
 
+test("部署入口保留可随 Fork 继承的排序前缀和手动运行入口", () => {
+	assert.match(workflow, /^name: 00 Deploy Worker$/m);
+	assert.match(workflow, /^  workflow_dispatch:$/m);
+});
+
 test("Cloudflare 生产凭据只注入实际调用 Cloudflare 的步骤", () => {
 	const deployJobStart = workflow.indexOf("  deploy:\n");
 	const stepsStart = workflow.indexOf("    steps:\n", deployJobStart);

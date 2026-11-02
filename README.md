@@ -157,7 +157,7 @@ GitHub Actions 会管理服务端加密 Worker Secrets。首次部署时，如�
 
 首次部署会直接采用该值。
 
-已有 Worker 需要自动增量轮换时，手动运行 `Deploy Worker` 并勾选 `rotate_encryption_key`。工作流只新增一个版本化密钥 Secret，并把 active key ID 切换到新版本；所有旧 Secret 和旧 JSON 密钥环都保持不变。新消息使用新密钥，旧密文继续使用各自信封中的 key ID 解密。
+已有 Worker 需要自动增量轮换时，手动运行 `00 Deploy Worker` 并勾选 `rotate_encryption_key`。工作流只新增一个版本化密钥 Secret，并把 active key ID 切换到新版本；所有旧 Secret 和旧 JSON 密钥环都保持不变。新消息使用新密钥，旧密文继续使用各自信封中的 key ID 解密。
 
 `apply_encryption_keyring` 是备用的手动覆盖入口。使用时，Repository Secret 中必须是完整 JSON 密钥环，`keys` 需要保留所有仍被历史密文引用的旧 key ID，再增加新 key 并更新 `activeKeyId`。
 
@@ -189,7 +189,9 @@ GitHub Actions 会管理服务端加密 Worker Secrets。首次部署时，如�
 
 推荐使用仓库内置的 GitHub Actions 工作流进行部署和后续更新。`Sync Upstream` 每天检查两次，仅自动合并带 `EdgeChat-Update: stable` / `security` 尾行标记的上游发布并显式触发部署；首次启用、同步令牌及 `MESSAGE_RETENTION_DAYS` 配置见[自动更新说明](docs/auto-update.md)。
 
-按照文档完成 Cloudflare 授权与仓库配置后，可以手动运行 `Deploy Worker`，也可以通过向 `master` 或 `main` 分支推送代码触发部署。工作流文件为 `.github/workflows/deploy-worker.yml`。
+Fork 后首次进入自己的仓库 `Actions` 页面，先按 GitHub 提示启用工作流，再选择列表靠前的 **`00 Deploy Worker`** 并点击 **`Run workflow`**。`00` 前缀随 Fork 继承，用于默认名称排序，不依赖主仓的置顶设置；部署网站无需运行其他工作流。
+
+按照文档完成 Cloudflare 授权与仓库配置后，可以手动运行 `00 Deploy Worker`，也可以通过向 `master` 或 `main` 分支推送代码触发部署。工作流文件为 `.github/workflows/deploy-worker.yml`。
 
 **[快速开始](https://echat.azora.top/guide/getting-started.html) · [GitHub Actions 部署教程](https://echat.azora.top/guide/actions-deploy.html)**
 

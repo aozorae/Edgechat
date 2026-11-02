@@ -20,7 +20,7 @@ Every server frame is JSON and contains `protocolVersion: 1` plus `type`.
 - `message_pinned`: includes the canonical pinned `message` for the room.
 - `message_unpinned`: includes `messageId`; clients clear the pin only when it still matches that ID.
 - `room_message`: inbox signal with `room`, `messageId`, `createdAt`, `unreadCount`, `mentionsMe`, `replyToMe`, `contentPreview` and `sender`; `mentionUnreadCount` keeps its legacy name but counts both mentions and replies, and is included only for directly addressed recipients so clients preserve their current value otherwise. The client then runs room sync.
-- `error`: includes a client-safe `error` message and never contains a stack trace.
+- `error`: includes a client-safe `error` message and never contains a stack trace. Web room `send` errors echo `clientMessageId` when the frame was parsed, so only that optimistic message is marked failed.
 
 Example:
 
@@ -29,6 +29,10 @@ Example:
 ```
 
 ## Lifecycle and recovery
+
+Web room sockets also accept `{type: "send", clientMessageId, content, attachment, mentionUserIds, replyMessageId}`. The optional `clientMessageId` must be a UUID. Web clients create one optimistic row per submission and reuse the same ID and payload when retrying. The canonical `message` frame confirms it within the room and sender scope. A duplicate submission returns the original message only to the submitting socket, without repeating broadcasts or projections. Legacy clients may omit the ID.
+
+Web optimistic rows are held only in page memory, isolated by room and cleared on logout. An unconfirmed send becomes retryable after 15 seconds or a connection failure; this does not imply the server rejected it. Late frames or history refresh can still confirm it. Reloading the page does not preserve the outbox.
 
 - Keep one inbox socket and, when open, one current-room socket while the app is visible.
 - Close both with code `1000` when the app enters the background.

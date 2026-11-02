@@ -56,15 +56,25 @@ function clearAuthState() {
 }
 
 async function loadSite() {
+  const serverOrigin = getStoredNativeServerOrigin();
   try {
     const payload = await api.getSite();
-    setSite(payload.site);
+    // 原生客户端可能已切换服务地址，旧站点的后台响应不能覆盖新配置。
+    if (serverOrigin === getStoredNativeServerOrigin()) setSite(payload.site);
   } catch {
     applySiteMetadata(state.site);
   }
 }
 
-async function initialize() {
+let initialization;
+function initialize() {
+  if (state.ready) return Promise.resolve();
+  // 入口与路由守卫共用同一次鉴权，避免提前挂载后重复恢复会话。
+  if (!initialization) initialization = initializeSession();
+  return initialization;
+}
+
+async function initializeSession() {
   if (state.ready) {
     return;
   }
@@ -79,7 +89,9 @@ async function initialize() {
     // 网关登录可能切换了账号，不能让之前 localStorage 中的旧 token 覆盖刚验证的 Cookie。
     clearAuthState();
   }
-  await loadSite();
+  // 名称、图标和配色独立加载，默认外观即可展示基础界面。
+  setSite(state.site);
+  void loadSite();
 
   if (!state.token && !hasDocumentSession) {
     state.ready = true;

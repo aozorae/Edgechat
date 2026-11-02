@@ -32,13 +32,13 @@ git push origin master
 
 ## 为什么同步后仍能部署
 
-内置 `GITHUB_TOKEN` 推送不会触发新的 `push` 工作流，因此脚本显式通过 `workflow_dispatch` 派发 `Deploy Worker`，从更新后的默认分支拉取代码、测试、迁移并部署。自动合并提交带 `[skip ci]`，即使配置 PAT 也不会额外启动 push 部署；该标记不会阻止显式 dispatch。
+内置 `GITHUB_TOKEN` 推送不会触发新的 `push` 工作流，因此脚本显式通过 `workflow_dispatch` 派发 `00 Deploy Worker`，从更新后的默认分支拉取代码、测试、迁移并部署。自动合并提交带 `[skip ci]`，即使配置 PAT 也不会额外启动 push 部署；该标记不会阻止显式 dispatch。
 
-当前 SHA 已成功部署或有部署正在运行时不重复派发；派发失败、部署失败或取消后，下次检查会补派。部署记录 fork 当前 SHA，不会记录同步前的旧 SHA。请在 Actions 中分别查看 `Sync Upstream` 和 `Deploy Worker`，同步成功不代表后续部署已成功。
+当前 SHA 已成功部署或有部署正在运行时不重复派发；派发失败、部署失败或取消后，下次检查会补派。部署记录 fork 当前 SHA，不会记录同步前的旧 SHA。请在 Actions 中分别查看 `Sync Upstream` 和 `00 Deploy Worker`，同步成功不代表后续部署已成功。
 
 ## 自动清除消息天数
 
-Worker 环境变量 `MESSAGE_RETENTION_DAYS` 默认 `15` 天，请填写正整数（例如 `30`）。GitHub Actions 部署者在 **Settings -> Secrets and variables -> Actions -> Variables** 添加同名 Repository Variable，然后运行 `Deploy Worker`；每次部署都会读取它，因此上游同步不会重置该设置。它不是 Secret。
+Worker 环境变量 `MESSAGE_RETENTION_DAYS` 默认 `15` 天，请填写正整数（例如 `30`）。GitHub Actions 部署者在 **Settings -> Secrets and variables -> Actions -> Variables** 添加同名 Repository Variable，然后运行 `00 Deploy Worker`；每次部署都会读取它，因此上游同步不会重置该设置。它不是 Secret。
 
 手动部署在 Wrangler 配置的 `[vars]` 中设置 `MESSAGE_RETENTION_DAYS = "30"`，再部署。Cloudflare 面板也可修改 Worker 的同名文本变量并发布，但 Actions 后续部署以 Repository Variable 为准，未配置则恢复 15 天。只在本机导出同名环境变量不会自动传入线上 Worker。
 

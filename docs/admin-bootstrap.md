@@ -14,13 +14,13 @@
 | `EDGECHAT_ADMIN_PASSWORD` | 自己设置的强密码，没有系统默认值 |
 | `EDGECHAT_ADMIN_DISPLAY_NAME` | 可选显示名，默认使用用户名 |
 
-旧的 `CFCHAT_ADMIN_*` 名称仍兼容，新名称优先。重新运行 `Actions -> Deploy Worker -> Run workflow`，账号初始化成功后，使用上述用户名和密码登录。首次漏配无需重新建库或重复导入 schema。
+旧的 `CFCHAT_ADMIN_*` 名称仍兼容，新名称优先。重新运行 `Actions -> 00 Deploy Worker -> Run workflow`，账号初始化成功后，使用上述用户名和密码登录。首次漏配无需重新建库或重复导入 schema。
 
 已有可登录超管时，更新不要求再次提供初始化凭据。只配置用户名或密码其中一项会报错；初始化后仍无有效超管，也会停止发布并给出配置提示。
 
 ### 手动部署：SQL 已执行，但无法首次登录
 
-需要 Node.js 24、已执行 `npm ci`，并已用 `wrangler.example.toml` 准备好自己的 `wrangler.toml`，其中 `DB` 必须指向网站实际绑定的 D1。先完成 schema/迁移，再初始化账号。Wrangler 使用自己的 Cloudflare 登录或 `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` 环境变量。
+需要 Node.js 24、已执行 `npm ci`，并已用 `wrangler.example.toml` 准备好自己的 `wrangler.toml`，其中 `DB` 必须指向网站实际绑定的 D1。先按 [D1 初始化与升级](d1-migrations.md) 完成数据库准备，再初始化账号：新装执行完整 schema 后只登记基线，不要再逐个执行历史迁移；旧库通过规划脚本升级。Wrangler 使用自己的 Cloudflare 登录或 `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` 环境变量。
 
 在项目根目录执行。密码通过终端输入，不写进源码、配置或命令历史。
 
@@ -68,11 +68,11 @@ fi
 
 Add `EDGECHAT_ADMIN_USERNAME` (your chosen name, such as `admin`) and `EDGECHAT_ADMIN_PASSWORD` (your own strong password) as Repository Secrets under `Settings -> Secrets and variables -> Actions -> Secrets`. `EDGECHAT_ADMIN_DISPLAY_NAME` is optional. Legacy `CFCHAT_ADMIN_*` names remain supported; new names take precedence.
 
-Run `Actions -> Deploy Worker -> Run workflow` again, then sign in with these credentials. Missing initial credentials do not require recreating the database. Later updates can omit them if an active super administrator already exists. Providing only one credential, or having no active super administrator after initialization, stops deployment with an actionable error.
+Run `Actions -> 00 Deploy Worker -> Run workflow` again, then sign in with these credentials. Missing initial credentials do not require recreating the database. Later updates can omit them if an active super administrator already exists. Providing only one credential, or having no active super administrator after initialization, stops deployment with an actionable error.
 
 ### Manual Deployment
 
-Use Node.js 24 and run `npm ci`. Complete the schema/migrations and configure your own `wrangler.toml` from the template, ensuring its `DB` binding points to the website's actual D1 database. Authenticate Wrangler using your own Cloudflare login or deployment environment variables.
+Use Node.js 24 and run `npm ci`. Configure your own `wrangler.toml` from the template, ensuring its `DB` binding points to the website's actual D1 database. Follow [D1 initialization and upgrades](d1-migrations.md) before creating an account: fresh installations apply the full schema and record a baseline, never replay historical migration files; existing databases use the planner. Authenticate Wrangler using your own Cloudflare login or deployment environment variables.
 
 From the repository root, use the PowerShell or Bash commands above: set `EDGECHAT_ADMIN_USERNAME`, enter `EDGECHAT_ADMIN_PASSWORD` without placing it in shell history, run `npm run admin:bootstrap`, remove the password from the environment, then execute the generated SQL:
 

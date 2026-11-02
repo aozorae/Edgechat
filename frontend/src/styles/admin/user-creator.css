@@ -1,39 +1,62 @@
-.admin-user-creator__form {
+/* 表单按可用内容宽度重排，而非缩小输入框，让侧栏和长翻译共存时仍可操作。 */
+.admin-user-creator.ui-surface {
+  container: user-creator / inline-size;
+  min-width: 0;
   display: grid;
-  gap: var(--admin-space-md);
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-panel);
+  background: var(--admin-panel);
+  box-shadow: none;
 }
 
-.admin-user-creator__identity-grid {
+.admin-user-creator__form {
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--admin-space-sm);
+  align-items: end;
+  gap: var(--admin-space-xs);
 }
 
-.admin-user-creator__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: flex-end;
-  gap: var(--admin-space-sm);
+.admin-user-creator__form .field {
+  min-width: 0;
 }
 
-/* 用户组选择靠左、提交按钮靠右，避免两者挤在一起。 */
-.admin-user-creator__actions .field {
-  margin-right: auto;
+/* 使用组件前缀限定子组件根按钮，不改用户列表复用的选择器外观。 */
+.admin-user-creator__group .group-picker {
+  width: 100%;
+  max-width: none;
+  min-height: 44px;
+  border-radius: var(--admin-radius-control);
 }
 
-.admin-user-creator__actions .ui-button {
-  flex: 0 0 auto;
-  min-width: 132px;
+.admin-user-creator__group .group-picker__chevron {
+  margin-inline-start: auto;
 }
 
-@media (max-width: 40rem) {
-  .admin-user-creator__identity-grid {
+.admin-user-creator__form > .ui-button {
+  grid-column: -2 / -1;
+  justify-self: end;
+  min-height: 44px;
+}
+
+@container user-creator (min-width: 56rem) {
+  .admin-user-creator__form {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  }
+
+  .admin-user-creator__form--with-group {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  }
+}
+
+@container user-creator (max-width: 32rem) {
+  .admin-user-creator__form {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .admin-user-creator__actions .ui-button {
+  .admin-user-creator__form > .ui-button {
     width: 100%;
   }
 }

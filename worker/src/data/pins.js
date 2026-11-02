@@ -1,16 +1,4 @@
-import { getMessageById } from "./messages.js";
-
-export async function getPinnedMessage(env, channelId) {
-	const { results } = await env.DB.prepare(
-		`SELECT message_id
-		 FROM channel_pins
-		 WHERE channel_id = ?
-		 LIMIT 1`,
-	)
-		.bind(Number(channelId))
-		.all();
-	return results[0] ? getMessageById(env, results[0].message_id) : null;
-}
+export { getPinnedMessage } from "./messages.js";
 
 export async function pinMessage(db, { channelId, messageId, pinnedBy }) {
 	// 用单条 INSERT SELECT 同时确认消息仍然存活，避免删除与置顶并发时留下失效引用。

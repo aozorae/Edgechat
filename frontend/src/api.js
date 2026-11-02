@@ -112,10 +112,10 @@ export default {
     });
   },
   session() {
-    return request('/auth/session');
+    return request('/auth/session', { signal: AbortSignal.timeout(10000) });
   },
   getSite() {
-    return request('/site');
+    return request('/site', { signal: AbortSignal.timeout(10000) });
   },
   changePassword(payload) {
     return request('/auth/change-password', {

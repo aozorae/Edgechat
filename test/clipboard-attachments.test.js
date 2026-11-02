@@ -149,7 +149,7 @@ test("files send without text, but not before all uploads are ready", async () =
 	h.scope.stop();
 });
 
-test("a partially failed send retains only unsent files and does not duplicate the caption on retry", async () => {
+test("a partially failed send moves unsent files into retryable rows without duplicating the caption", async () => {
 	const h = createRoom(async (input) => uploaded(input));
 	await h.room.uploadAttachment([file(), file("second.png")]);
 	h.room.composerText.value = "caption";
@@ -157,12 +157,15 @@ test("a partially failed send retains only unsent files and does not duplicate t
 		if (h.frames.length) throw new Error("Disconnected");
 		h.frames.push(JSON.parse(frame));
 	};
-	assert.equal(await h.room.sendMessage(), false);
-	assert.equal(h.room.pendingAttachments.value.length, 1);
-	assert.equal(h.room.composerText.value, "");
-	h.socket.send = (frame) => h.frames.push(JSON.parse(frame));
 	assert.equal(await h.room.sendMessage(), true);
+	assert.equal(h.room.pendingAttachments.value.length, 0);
+	assert.equal(h.room.composerText.value, "");
+	const failed = h.room.messages.value.find(message => message.sendStatus === "failed");
+	assert.equal(failed.attachment.name, "second.png");
+	h.socket.send = (frame) => h.frames.push(JSON.parse(frame));
+	h.room.retryMessage(failed.clientMessageId);
 	assert.deepEqual(h.frames.map((frame) => frame.content), ["caption", ""]);
+	assert.equal(h.frames[1].clientMessageId, failed.clientMessageId);
 	h.scope.stop();
 });
 

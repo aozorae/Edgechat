@@ -26,10 +26,14 @@ export function registerMessageRoutes(app) {
       listMessages(c.env, roomId, before, limit),
       getPinnedMessage(c.env, roomId)
     ]);
-    await markRoomRead(c.env.DB, {
-      channelId: roomId,
-      userId: session.userId
-    });
+    // 只确认首屏已返回的水位；旧页不能顺带读掉新消息，已读失败也不阻塞正文显示。
+    if (!before && messages.length) {
+      c.executionCtx.waitUntil(markRoomRead(c.env.DB, {
+        channelId: roomId,
+        userId: session.userId,
+        messageId: messages.at(-1).id
+      }).catch(() => { console.error('history_read_receipt_failed'); }));
+    }
 
     return c.json({
       room: {
