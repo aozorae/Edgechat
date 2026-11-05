@@ -11,6 +11,12 @@ const keyring = JSON.stringify({
   }
 });
 
+const sessions = {
+  async get() {
+    return JSON.stringify({ userId: 42, isAdmin: false, sessionVersion: 0 });
+  }
+};
+
 function fileDb({ accessible, metadata = true }) {
   return {
     prepare(sql) {
@@ -18,6 +24,12 @@ function fileDb({ accessible, metadata = true }) {
         bind() {
           return {
             async all() {
+              if (sql.includes('AS public_reference')) {
+                return { results: [{ public_reference: 0 }] };
+              }
+              if (sql.includes('FROM users u')) {
+                return { results: [{ id: 42, is_disabled: 0, session_version: 0, is_super_admin: 0 }] };
+              }
               if (sql.includes('SELECT filename, content_type, size')) {
                 return metadata
                   ? { results: [{ filename: '报告.bin', content_type: 'application/octet-stream', size: 4 }] }
@@ -76,10 +88,11 @@ test('authorized attachment download decrypts bytes and disables shared caching'
   registerUploadRoutes(app);
 
   const response = await app.request(
-    `https://edgechat.test/files/${objectKey}`,
+    `https://edgechat.test/files/${objectKey}?token=valid-session`,
     {},
     {
       DB: fileDb({ accessible: true }),
+      SESSIONS: sessions,
       FILES: {
         async get() {
           return object;
@@ -124,9 +137,9 @@ test('authorized attachment download reports when the deployment has no R2 bindi
   registerUploadRoutes(app);
 
   const response = await app.request(
-    'https://edgechat.test/files/42/private.bin',
+    'https://edgechat.test/files/42/private.bin?token=valid-session',
     {},
-    { DB: fileDb({ accessible: true }) }
+    { DB: fileDb({ accessible: true }), SESSIONS: sessions }
   );
 
   assert.equal(response.status, 503);
@@ -143,10 +156,11 @@ test('telegram attachment downloads through message authorization without upload
   registerUploadRoutes(app);
 
   const response = await app.request(
-    `https://edgechat.test/files/${encodeURIComponent(objectKey)}`,
+    `https://edgechat.test/files/${encodeURIComponent(objectKey)}?token=valid-session`,
     {},
     {
       DB: fileDb({ accessible: true, metadata: false }),
+      SESSIONS: sessions,
       FILES: {
         async get() {
           return {

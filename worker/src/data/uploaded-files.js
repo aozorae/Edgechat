@@ -143,7 +143,9 @@ export async function canAccessFile(db, key, userId = null, trustedOrigins = [])
 	const iconContentType = normalizeContentType(refs.site_icon_content_type);
 	if (icon.kind === 'local' && icon.key === cleanKey &&
 		iconContentType.startsWith('image/') && iconContentType !== 'image/svg+xml') return true;
-	if (!Number.isFinite(Number(userId))) return false;
+	// Number(null) 为 0；公开群附件也必须先有有效身份，不能把无会话当成用户放行。
+	const readerId = Number(userId);
+	if (!Number.isInteger(readerId) || readerId <= 0) return false;
 
 	// 发送前允许上传者预览；发送后则按消息所在公开群组或成员关系授权。
 	const { results } = await db
@@ -164,7 +166,7 @@ export async function canAccessFile(db, key, userId = null, trustedOrigins = [])
 			     ))
 			 ))`,
 		)
-		.bind(cleanKey, cleanKey, Number(userId), cleanKey, Number(userId))
+		.bind(cleanKey, cleanKey, readerId, cleanKey, readerId)
 		.all();
 	return Boolean(results[0]);
 }
