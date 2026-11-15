@@ -140,3 +140,19 @@ test("R2 未开通时工作流移除 FILES binding，已开通时保留目标 bu
 	assert.match(configStep, /bucket_name = \\"\$\{R2_BUCKET_NAME\}\\"/);
 	assert.match(configStep, /\^\\\[\\\[r2_buckets\\\]\\\]\$\/,\/\^\$\/d/);
 });
+
+test("S3 uses one optional repository secret with safe deployment ordering and no inline expansion", () => {
+  const custom = getStep('Configure custom S3 secret (optional)');
+  const restore = getStep('Restore native R2 selection (optional)');
+  for (const step of [custom, restore, getStep('Ensure Cloudflare resources')]) {
+    assert.match(step, /EDGECHAT_S3: \$\{\{ secrets\.EDGECHAT_S3 \}\}/);
+    assert.doesNotMatch(step.split('run:')[1] || '', /\$\{\{ secrets\./);
+  }
+  assert.match(custom, /printf '%s' "\$EDGECHAT_S3" \| npx wrangler secret put EDGECHAT_S3/);
+  assert.match(custom, /!= "r2"/);
+  assert.match(restore, /== "r2"/);
+  assert.match(restore, /printf '%s' 'r2' \| npx wrangler secret put EDGECHAT_S3/);
+  assert.ok(workflow.indexOf('      - name: Configure custom S3') < workflow.indexOf('      - name: Prepare Worker encryption secret'));
+  assert.ok(workflow.indexOf('      - name: Restore native R2') > workflow.indexOf('      - name: Deploy worker'));
+  assert.doesNotMatch(workflow, /secret delete EDGECHAT_S3/);
+});

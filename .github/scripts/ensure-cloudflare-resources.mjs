@@ -3,6 +3,7 @@
 import { appendFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseS3Config, usesCustomS3 } from "../../worker/src/storage/s3-config.ts";
 
 const API_BASE_URL = "https://api.cloudflare.com/client/v4";
 
@@ -314,6 +315,9 @@ export async function ensureCloudflareResources({
 } = {}) {
   const names = resourceNames(env);
   const context = { accountId, apiToken, fetchImpl };
+  const customS3 = usesCustomS3(env.EDGECHAT_S3);
+  // 在任何云端写操作之前检查必填项；不探测外部服务，也不输出配置或凭据。
+  if (customS3) parseS3Config(env.EDGECHAT_S3);
 
   console.log("Ensuring Cloudflare resources for production deployment...");
   console.log(`Target account: ${accountId}`);
@@ -323,7 +327,10 @@ export async function ensureCloudflareResources({
 
   const d1 = await ensureD1Database(context, names.d1DatabaseName);
   const kv = await ensureKvNamespace(context, names.kvNamespaceTitle);
-  const r2 = await ensureR2Bucket(context, names.r2BucketName);
+  const r2 = customS3
+    ? { available: false, created: false }
+    : await ensureR2Bucket(context, names.r2BucketName);
+  if (customS3) console.log("Custom S3 selected; skipping R2 provisioning without deleting existing buckets.");
 
   setOutput("d1_database_name", names.d1DatabaseName);
   setOutput("d1_database_id", d1.id);

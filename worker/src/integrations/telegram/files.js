@@ -5,6 +5,7 @@ import {
 } from "../../attachment-metadata.js";
 import { decryptAttachment, encryptAttachment } from "../../encryption.js";
 import { downloadTelegramFile, getTelegramFile } from "./client.js";
+import { getFileStorage } from "../../storage/index.ts";
 
 export const TELEGRAM_BRIDGE_FILE_LIMIT = 16 * 1024 * 1024;
 export const TELEGRAM_FILE_SKIP_REASON = Object.freeze({
@@ -26,7 +27,8 @@ export async function importTelegramAttachment(env, {
 	attachment,
 }) {
 	if (!attachment) return { attachment: null, skipReason: null };
-	if (!env.FILES) {
+	const storage = getFileStorage(env);
+	if (!storage) {
 		return {
 			attachment: null,
 			skipReason: TELEGRAM_FILE_SKIP_REASON.STORAGE_UNAVAILABLE,
@@ -49,9 +51,9 @@ export async function importTelegramAttachment(env, {
 	const name = sanitizeFilename(attachment.fileName);
 	const type = normalizeContentType(attachment.mimeType) || "application/octet-stream";
 	const key = telegramObjectKey({ telegramChatId, telegramMessageId, filename: name });
-	// Telegram 只负责传输，正式附件在进入消息前即转换为 EdgeChat 自有加密 R2 对象。
+	// Telegram 只负责传输，正式附件在进入消息前即转换为 EdgeChat 自有加密对象。
 	const encrypted = await encryptAttachment(env, bytes, key);
-	await env.FILES.put(key, encrypted, {
+	await storage.put(key, encrypted, {
 		httpMetadata: { contentType: type, cacheControl: FILE_RESPONSE_CACHE_CONTROL },
 		customMetadata: { filename: name, edgechatEncryption: "v1", source: "telegram" },
 	});
@@ -80,13 +82,14 @@ export async function loadEdgeChatAttachment(env, attachment) {
 	if (Number(attachment.size) > TELEGRAM_BRIDGE_FILE_LIMIT) {
 		return { file: null, skipReason: TELEGRAM_FILE_SKIP_REASON.TOO_LARGE };
 	}
-	if (!env.FILES) {
+	const storage = getFileStorage(env);
+	if (!storage) {
 		return {
 			file: null,
 			skipReason: TELEGRAM_FILE_SKIP_REASON.STORAGE_UNAVAILABLE,
 		};
 	}
-	const object = await env.FILES.get(attachment.key);
+	const object = await storage.get(attachment.key);
 	if (!object) {
 		return { file: null, skipReason: TELEGRAM_FILE_SKIP_REASON.NOT_FOUND };
 	}
@@ -108,9 +111,11 @@ export async function loadEdgeChatAttachment(env, attachment) {
 }
 
 export async function deleteImportedTelegramAttachment(env, attachment) {
-	if (!attachment?.key || !env.FILES) return;
+	if (!attachment?.key) return;
 	try {
-		await env.FILES.delete(attachment.key);
+		const storage = getFileStorage(env);
+		if (!storage) return;
+		await storage.delete(attachment.key);
 	} catch (error) {
 		console.warn(JSON.stringify({
 			message: "telegram orphan attachment delete failed",

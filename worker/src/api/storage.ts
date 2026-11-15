@@ -2,6 +2,7 @@ import { runAuthorizedBatch } from '../rbac/authorization.ts';
 import { ApiError } from '../errors.js';
 import { summarizeR2Objects } from '../storage-statistics.js';
 import { listStorageOwners } from '../data/users.js';
+import { getFileStorage } from '../storage/index.ts';
 
 export function registerStorageRoutes(app) {
   app.get('/api/admin/storage', async (c) => {
@@ -9,7 +10,8 @@ export function registerStorageRoutes(app) {
     return c.json(row ? JSON.parse(row.setting_value) : { items: [], users: [], scannedAt: null });
   });
   app.post('/api/admin/storage/scan', async (c) => {
-    if (!c.env.FILES) throw new ApiError('当前部署没有绑定 R2，无法统计存储空间', 503);
+    const storage = getFileStorage(c.env);
+    if (!storage) throw new ApiError('当前部署没有绑定 R2，无法统计存储空间', 503);
     const cursor = c.req.query('cursor') || '';
     const key = `storage-scan:${c.get('session').userId}`;
     let state = cursor ? JSON.parse(await c.env.SESSIONS.get(key) || 'null') : null;
@@ -22,7 +24,7 @@ export function registerStorageRoutes(app) {
       });
       state = { pages: 0, items: {}, users: await listStorageOwners(db) };
     }
-    const listed = await c.env.FILES.list({ limit: 1000, ...(cursor ? { cursor } : {}), include: [] });
+    const listed = await storage.list({ limit: 1000, ...(cursor ? { cursor } : {}), include: [] });
     const items = summarizeR2Objects(listed.objects);
     for (const item of items) {
       const previous = state.items[item.ownerKey];

@@ -1,6 +1,7 @@
 import manifest from '../generated/schema-manifest.json' with { type: 'json' };
 import { createInternalHeaders } from '../verified-identity.js';
 import { inspectSchema, type SchemaQuery } from './schema-contract.ts';
+import { getFileStorage, hasFileStorage } from '../storage/index.ts';
 
 interface Database {
   prepare(sql: string): { all(): Promise<{ results: Awaited<ReturnType<SchemaQuery>> }> };
@@ -13,6 +14,7 @@ interface MaintenanceEnv {
   DB?: Database;
   SESSIONS?: { get(key: string): Promise<unknown> };
   FILES?: { list(options: { limit: number }): Promise<unknown> };
+  EDGECHAT_S3?: string;
   CHANNEL_ROOM?: Namespace;
   USER_INBOX?: Namespace;
   SCHEDULER?: Namespace;
@@ -95,7 +97,7 @@ export async function runSystemCheck(env: MaintenanceEnv, { timeoutMs = 8000 } =
   const [dbChecks, kv, r2, room, inbox, scheduler, bridge, call, notifications] = await Promise.all([
     database(),
     env.SESSIONS ? probe('sessions', async () => { await env.SESSIONS?.get('__edgechat_health__'); return {}; }, timeoutMs) : absent('sessions'),
-    env.FILES ? probe('files', async () => { await env.FILES?.list({ limit: 1 }); return {}; }, timeoutMs) : absent('files', true),
+    hasFileStorage(env) ? probe('files', async () => { await getFileStorage(env)?.list({ limit: 1 }); return {}; }, timeoutMs) : absent('files', true),
     checkObject('channelRoom', env.CHANNEL_ROOM, 'ChannelRoom', timeoutMs),
     checkObject('userInbox', env.USER_INBOX, 'UserInbox', timeoutMs),
     checkObject('scheduler', env.SCHEDULER, 'Scheduler', timeoutMs),

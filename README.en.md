@@ -185,6 +185,8 @@ See [TECHNICAL.md](TECHNICAL.md) for more implementation details.
 
 ## Deployment
 
+Native R2 remains the default with unchanged setup. A single optional Secret enables [custom S3-compatible storage](docs/s3-storage.md#english), without a public bucket or browser CORS.
+
 **First login: there is no default administrator password or public sign-up; the schema SQL does not create accounts.** For Actions, configure `EDGECHAT_ADMIN_USERNAME` / `EDGECHAT_ADMIN_PASSWORD` Repository Secrets. For manual deployment, generate and apply the administrator SQL. See [first administrator setup](docs/admin-bootstrap.md#english) for commands and missing-credential recovery. Administrators can then create users or registration invitations.
 
 ### Automatic Deployment with GitHub Actions

@@ -176,6 +176,8 @@ GitHub Actions はサーバーサイド暗号化の Worker Secrets を管理し�
 
 ## デプロイ
 
+既定のネイティブ R2 の設定手順は変わりません。特殊な用途では、任意の Secret 1 個で[カスタム S3 互換ストレージ](docs/s3-storage.md#english)を利用でき、公開バケットやブラウザー CORS は不要です。
+
 **初回ログイン：管理者の既定パスワードと公開登録はありません。schema SQL はアカウントを作成しません。** Actions では `EDGECHAT_ADMIN_USERNAME` / `EDGECHAT_ADMIN_PASSWORD` を Repository Secrets に設定し、手動デプロイでは管理者初期化 SQL を生成して実行してください。[初回管理者設定](docs/admin-bootstrap.md#english)にコマンドと設定漏れの対応を記載しています。ログイン後、管理者がユーザーや登録招待を作成します。
 
 ### GitHub Actions による自動デプロイ

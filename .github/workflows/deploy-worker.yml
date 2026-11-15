@@ -65,6 +65,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           EDGECHAT_KV_NAMESPACE_TITLE: ${{ vars.EDGECHAT_KV_NAMESPACE_TITLE || 'cfchat-sessions' }}
+          EDGECHAT_S3: ${{ secrets.EDGECHAT_S3 }}
         run: node .github/scripts/ensure-cloudflare-resources.mjs
       - name: Generate wrangler config for CI
         shell: bash
@@ -129,6 +130,17 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           EDGECHAT_D1_DATABASE_ID: ${{ steps.ensure_resources.outputs.d1_database_id }}
         run: node .github/scripts/prepare-d1-migrations.mjs --verify-admin
+      # 先注入 S3，再发布无 R2 binding 的版本；缺省分支不执行任何额外云操作。
+      - name: Configure custom S3 secret (optional)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EDGECHAT_S3: ${{ secrets.EDGECHAT_S3 }}
+        shell: bash
+        run: |
+          if [[ -n "${EDGECHAT_S3//[[:space:]]/}" && "${EDGECHAT_S3//[[:space:]]/}" != "r2" ]]; then
+            printf '%s' "$EDGECHAT_S3" | npx wrangler secret put EDGECHAT_S3 --config wrangler.ci.toml
+          fi
       - name: Prepare Worker encryption secret
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -158,6 +170,17 @@ jobs:
             npx wrangler deploy --config wrangler.ci.toml --secrets-file .tmp/worker-secrets.json
           else
             npx wrangler deploy --config wrangler.ci.toml
+          fi
+      # 切回 R2 时先发布 FILES binding，避免旧 S3 版本先失去可用后端。
+      - name: Restore native R2 selection (optional)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EDGECHAT_S3: ${{ secrets.EDGECHAT_S3 }}
+        shell: bash
+        run: |
+          if [[ "${EDGECHAT_S3//[[:space:]]/}" == "r2" ]]; then
+            printf '%s' 'r2' | npx wrangler secret put EDGECHAT_S3 --config wrangler.ci.toml
           fi
       - name: Configure TURN secrets (optional)
         env:

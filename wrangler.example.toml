@@ -47,6 +47,7 @@ id = "YOUR_KV_NAMESPACE_ID_HERE"
 
 [[r2_buckets]]
 binding = "FILES"
+# 可选自定义 S3 只需 EDGECHAT_S3 Secret；原生 R2 用户无需更改此块，见 docs/s3-storage.md。
 # Legacy R2 bucket name kept intentionally; code/docs use Edgechat branding.
 bucket_name = "cfchat-files"
 

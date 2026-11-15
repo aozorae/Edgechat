@@ -1,6 +1,6 @@
 {
 	"name": "edgechat",
-	"version": "2.20.3",
+	"version": "2.21.0",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -37,8 +37,10 @@
 		"@capacitor/android": "^8.5.1",
 		"@capacitor/core": "^8.5.1",
 		"@lucide/vue": "^1.28.0",
+		"aws4fetch": "1.0.20",
 		"bowser": "^2.14.1",
 		"dompurify": "^3.4.15",
+		"fast-xml-parser": "5.12.1",
 		"hono": "^4.8.3",
 		"markdown-it": "^15.0.2",
 		"vditor": "^4.0.0",

@@ -38,6 +38,8 @@ const fixedErrorTranslations = new Map([
   ['无效的会话类型', 'Invalid conversation type'],
   ['接口不存在', 'API endpoint not found'],
   ['服务器开小差了', 'Something went wrong on the server'],
+  ['自定义 S3 配置无效，请联系管理员检查 EDGECHAT_S3', 'Custom S3 configuration is invalid. Ask an administrator to check EDGECHAT_S3'],
+  ['对象存储请求失败，请检查 S3 配置或稍后重试', 'Object storage request failed. Check the S3 configuration or try again later'],
   ['当前部署没有绑定 R2，无法统计存储空间', 'R2 storage is not configured for this deployment, so storage usage cannot be calculated'],
   ['站点名称不能为空', 'Site name cannot be empty'],
   ['不支持的站点配色', 'Unsupported site color palette'],

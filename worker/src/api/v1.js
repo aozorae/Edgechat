@@ -2,6 +2,7 @@ import { verifyPassword } from '../auth.js';
 import { verifyLoginSecurity } from '../login-security.ts';
 import { getLoginVerification } from '../data/login-verification.ts';
 import { saveUploadedFile } from './upload.js';
+import { hasFileStorage } from '../storage/index.ts';
 import {
   getRoomSyncCursor,
   listMessages,
@@ -97,7 +98,7 @@ export function registerV1Routes(app) {
         deviceSessions: true,
         realtimeTickets: true,
         idempotentMessages: true,
-        idempotentUploads: Boolean(c.env.FILES),
+        idempotentUploads: hasFileStorage(c.env),
         roomSync: true,
         backgroundPush: false
       }
@@ -268,7 +269,7 @@ export function registerV1Routes(app) {
   });
 
   app.post('/api/v1/uploads', authMiddleware, async (c) => {
-    if (!c.env.FILES) {
+    if (!hasFileStorage(c.env)) {
       return v1ErrorResponse('attachments_unavailable', '当前部署没有绑定 R2，无法上传附件', 503);
     }
     const maxFileSize = Number(c.env.MAX_FILE_SIZE || 20971520);

@@ -1,6 +1,7 @@
 import { cleanupR2Keys } from "./gc.js";
 import { getMessageDeletionTarget, softDeleteMessage } from "./data/messages.js";
 import { authorizeMessageModeration } from "./room-access.js";
+import { hasFileStorage } from "./storage/index.ts";
 
 export class MessageDeletionError extends Error {
 	constructor(message) {
@@ -32,7 +33,7 @@ export function createMessageDeletion({
 		}
 
 		let attachmentKey = null;
-		if (env.FILES) {
+		if (hasFileStorage(env)) {
 			const target = await getDeletionTarget(env.DB, messageId);
 			attachmentKey = target?.attachment_key || null;
 		}

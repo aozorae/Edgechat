@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   ensureKvNamespace,
   ensureR2Bucket,
+  ensureCloudflareResources,
 } from "../.github/scripts/ensure-cloudflare-resources.mjs";
 
 function jsonResponse(payload, status = 200) {
@@ -38,6 +39,33 @@ test("KV only reuses the explicitly selected namespace title", async () => {
     created: false,
   });
   assert.deepEqual(requests.map((request) => request.method), ["GET"]);
+});
+
+test("Custom S3 skips all R2 calls while the default and r2 selection preserve provisioning", async () => {
+  for (const selection of ['', 'r2', JSON.stringify({ endpoint: 'https://s3.example.test', bucket: 'files', accessKeyId: 'test-key', secretAccessKey: 'test-secret' })]) {
+    const requests = [];
+    const result = await ensureCloudflareResources({
+      accountId: 'account', apiToken: 'token', env: { EDGECHAT_S3: selection },
+      async fetchImpl(url) {
+        requests.push(String(url));
+        if (String(url).includes('/d1/database')) return jsonResponse({ success: true, result: [{ name: 'cfchat-db', uuid: 'db-id' }] });
+        if (String(url).includes('/storage/kv/')) return jsonResponse({ success: true, result: [{ title: 'cfchat-sessions', id: 'kv-id' }] });
+        return jsonResponse({ success: true, result: { buckets: [{ name: 'cfchat-files' }] } });
+      },
+    });
+    const custom = selection.startsWith('{');
+    assert.equal(result.r2.available, !custom);
+    assert.equal(requests.filter((url) => url.includes('/r2/')).length, custom ? 0 : 2);
+  }
+});
+
+test("Invalid S3 configuration stops before cloud requests and never exposes credentials", async () => {
+  let calls = 0;
+  await assert.rejects(ensureCloudflareResources({
+    env: { EDGECHAT_S3: '{secret-sensitive-invalid-json' },
+    fetchImpl() { calls++; },
+  }), (error) => !error.message.includes('secret-sensitive'));
+  assert.equal(calls, 0);
 });
 
 test("KV defaults to the isolated legacy title instead of generic SESSIONS", async () => {

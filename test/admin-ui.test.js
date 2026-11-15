@@ -164,7 +164,8 @@ test('存储统计由按钮手动刷新且四个统计列均可排序', () => {
   assert.match(apiSource, /adminStorageScan/);
   const storageApi = readFileSync(new URL('../worker/src/api/storage.ts', import.meta.url), 'utf8');
   assert.match(storageApi, /\/api\/admin\/storage\/scan/);
-  assert.match(storageApi, /FILES\.list/);
+  assert.match(storageApi, /getFileStorage\(c\.env\)/);
+  assert.match(storageApi, /storage\.list/);
   assert.match(storageApi, /没有绑定 R2，无法统计存储空间/);
   assert.match(storageSource, /@click="refreshStorage"/);
   assert.doesNotMatch(storageSource, /onMounted\(refreshStorage\)/);

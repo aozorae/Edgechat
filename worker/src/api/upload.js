@@ -8,6 +8,7 @@ import { decryptAttachment, encryptAttachment } from '../encryption.js';
 import { normalizeContentType, sanitizeFilename } from '../attachment-metadata.js';
 import { validateSession } from '../session.js';
 import { errorResponse, requestBodyTooLarge } from '../utils.js';
+import { getFileStorage, hasFileStorage } from '../storage/index.ts';
 
 const FILE_RESPONSE_CACHE_CONTROL = 'private, no-store';
 const UPLOAD_BODY_OVERHEAD_BYTES = 1024 * 1024;
@@ -73,7 +74,7 @@ function validateUpload(env, file) {
 
 export function registerUploadRoutes(app) {
   app.post('/api/upload', async (c) => {
-    if (!c.env.FILES) {
+    if (!hasFileStorage(c.env)) {
       return errorResponse('当前部署没有绑定 R2，无法上传附件', 503);
     }
 
@@ -111,12 +112,13 @@ export function registerUploadRoutes(app) {
     if (!canRead) {
       return new Response('Forbidden', { status: 403 });
     }
-    if (!c.env.FILES) {
+    const storage = getFileStorage(c.env);
+    if (!storage) {
       return errorResponse('当前部署没有绑定 R2，无法读取附件', 503);
     }
 
     const [object, fileMetadata] = await Promise.all([
-      c.env.FILES.get(key),
+      storage.get(key),
       getUploadedFileMetadata(c.env.DB, key)
     ]);
     if (!object) {
@@ -163,6 +165,7 @@ export function registerUploadRoutes(app) {
 
 export async function saveUploadedFile(env, session, file, { clientUploadId = null } = {}) {
   validateUpload(env, file);
+  const storage = getFileStorage(env);
   if (clientUploadId) {
     const existing = await getUploadedFileByClientId(env.DB, session.userId, clientUploadId);
     if (existing) return { file: existing, created: false };
@@ -173,7 +176,7 @@ export async function saveUploadedFile(env, session, file, { clientUploadId = nu
   const filename = sanitizeFilename(file.name);
   const contentType = normalizeContentType(file.type) || 'application/octet-stream';
   const encryptedFile = await encryptAttachment(env, await file.arrayBuffer(), key);
-  await env.FILES.put(key, encryptedFile, {
+  await storage.put(key, encryptedFile, {
     httpMetadata: { contentType, cacheControl: FILE_RESPONSE_CACHE_CONTROL },
     customMetadata: { filename, edgechatEncryption: 'v1' }
   });
@@ -188,9 +191,9 @@ export async function saveUploadedFile(env, session, file, { clientUploadId = nu
       clientUploadId
     });
   } catch (error) {
-    // 元数据失败或幂等键竞争时移除本次新对象，避免 R2 留下没有稳定引用的副本。
+    // 元数据失败或幂等键竞争时移除本次新对象，避免存储后端留下没有稳定引用的副本。
     try {
-      await env.FILES.delete(key);
+      await storage.delete(key);
     } catch (deleteError) {
       console.warn('Failed to delete orphaned upload after metadata error', deleteError);
     }
