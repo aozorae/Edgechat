@@ -1,6 +1,6 @@
 {
 	"name": "edgechat",
-	"version": "2.21.0",
+	"version": "2.21.1",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -14,6 +14,7 @@
 		"predev:frontend": "npm run vditor:assets",
 		"predev:demo": "npm run schema:generate && npm run vditor:assets",
 		"test": "node --test",
+		"test:editor-security": "npm run vditor:assets && node .github/scripts/check-vditor-security.mjs",
 		"check:frontend-size": "npm run vditor:assets && node .github/scripts/check-frontend-size.mjs",
 		"dev:frontend": "vite --config frontend/vite.config.js",
 		"dev:demo": "vite --config frontend/vite.demo.config.js",
@@ -51,6 +52,7 @@
 		"@biomejs/biome": "2.4.11",
 		"@capacitor/cli": "^8.5.1",
 		"@vitejs/plugin-vue": "^6.0.8",
+		"playwright": "1.63.0",
 		"sql.js": "1.14.2",
 		"vite": "^8.2.1",
 		"wrangler": "^4.11.1"

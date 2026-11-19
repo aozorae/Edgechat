@@ -60,6 +60,9 @@ test("编辑器复用 Markdown 草稿、提及候选和原发送快捷键约束"
 	assert.match(contentSafety, /pre:not\(\.vditor-wysiwyg__preview\) code/);
 	assert.match(contentSafety, /preview\.replaceChildren\(document\.createTextNode/);
 	assert.match(contentSafety, /iframe, object, embed, video, audio/);
+	assert.match(contentSafety, /DOMPurify\.sanitize\(template\.innerHTML/);
+	assert.match(contentSafety, /ALLOWED_TAGS:/);
+	assert.match(contentSafety, /ALLOWED_ATTR:/);
 	assert.match(editor, /render:\s*\{ media: \{ enable: false \} \}/);
 	assert.match(editor, /mathBlockPreview:\s*false/);
 	assert.match(editor, /codeBlockPreview:\s*false/);

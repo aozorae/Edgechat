@@ -45,9 +45,9 @@ test('首次安装：只有 schema 无法登录，初始化后能登录、访问
   assert.equal((await h.request('/auth/login', { ...credentials, password: 'wrong' })).status, 401);
 });
 
-test('初始化 SQL 转义用户名和显示名，密码只保留随机盐和哈希', async () => {
+test('初始化 SQL 转义显示名，密码只保留随机盐和哈希', async () => {
   const h = harness();
-  const credentials = { username: "root'one", displayName: "Owner's site", password: 'secret-not-in-generated-sql' };
+  const credentials = { username: "root.one", displayName: "Owner's site", password: 'secret-not-in-generated-sql' };
   const sql = await generateBootstrapSql(credentials);
   assert.ok(!sql.includes(credentials.password));
   h.database.exec(sql);
@@ -78,7 +78,7 @@ test('同名普通账号不能经初始化被提权或重置密码', async () =>
 
 test('Actions 首次同步创建超管，同密码部署不改资料或失效会话', async () => {
   const h = harness();
-  const credentials = { username: "root'one", password: 'actions-password' };
+  const credentials = { username: "root.one", password: 'actions-password' };
   assert.equal(await syncAdminCredentials(credentials, h.query), 'created');
   const login = await h.request('/auth/login', credentials);
   const { token } = await login.json();

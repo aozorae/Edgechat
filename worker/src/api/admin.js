@@ -1,4 +1,5 @@
 import { hashPassword } from '../auth.js';
+import { isValidNewUsername, USERNAME_RULE_ERROR } from '../../../shared/username.ts';
 import { ensureGeneralChannelMembership } from '../data/general-channel.js';
 import {
   createRegistrationInvite,
@@ -134,6 +135,7 @@ export function registerAdminRoutes(app) {
     if (!username || !password) {
       return errorResponse('用户名和密码不能为空');
     }
+    if (!isValidNewUsername(username)) return errorResponse(USERNAME_RULE_ERROR);
 
     const hashed = await hashPassword(password);
     const db = c.get('authorizationDatabase');

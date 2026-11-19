@@ -1,3 +1,5 @@
+import DOMPurify from "dompurify";
+
 type VditorLute = {
 	Md2VditorDOM(markdown: string): string;
 	SpinVditorDOM(html: string): string;
@@ -67,7 +69,20 @@ function removeRemoteContentBeforeMount(html: string) {
 		element.remove();
 	}
 
-	return template.innerHTML;
+	// 去除媒体不等于净化 HTML：只允许编辑器所需的结构和属性，拒绝事件、样式、
+	// SVG/MathML 与危险链接协议；保留 data-* 和编辑属性以维持 Lute 的回读能力。
+	return DOMPurify.sanitize(template.innerHTML, {
+		ALLOWED_TAGS: [
+			"p", "div", "span", "br", "wbr", "strong", "b", "em", "i", "s", "del", "strike",
+			"u", "a", "blockquote", "pre", "code", "ul", "ol", "li", "hr",
+			"h1", "h2", "h3", "h4", "h5", "h6", "table", "thead", "tbody", "tr", "th", "td", "input",
+		],
+		ALLOWED_ATTR: [
+			"class", "href", "title", "contenteditable", "spellcheck",
+			"type", "checked", "value", "align", "colspan", "rowspan", "start",
+		],
+		ALLOW_DATA_ATTR: true,
+	});
 }
 
 export function installVditorContentSafety(lute: VditorLute) {

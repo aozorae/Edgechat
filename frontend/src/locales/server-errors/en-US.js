@@ -27,6 +27,7 @@ const fixedErrorTranslations = new Map([
   ['注册链接不存在', 'Registration link not found'],
   ['注册链接已失效', 'Registration link has expired'],
   ['用户名和密码不能为空', 'Username and password are required'],
+  ['用户名须为1至64个字符，以字母或数字开头，仅可包含字母、数字、组合音标、下划线、点和连字符', 'Username must be 1–64 characters, start with a letter or number, and contain only letters, numbers, combining marks, underscores, dots or hyphens'],
   ['该用户名不可用于邀请注册', 'This username cannot be used for invitation registration'],
   ['请输入用户名和密码', 'Please enter your username and password'],
   ['账号或密码错误', 'Incorrect username or password'],

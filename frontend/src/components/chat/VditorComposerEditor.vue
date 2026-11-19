@@ -5,6 +5,7 @@ import type Vditor from "vditor";
 import type { EdgeChatVditorRuntime } from "../../vditor-runtime.ts";
 import type { MentionUser } from "../../mentions.ts";
 import { installVditorContentSafety } from "../../vditor-content-safety.ts";
+import { buildVditorMentionHints } from "../../vditor-mention-hints.ts";
 import { getClipboardFiles } from "./clipboard-files.js";
 
 const props = defineProps<{
@@ -29,28 +30,8 @@ let alive = true;
 let initializationTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 let transferTarget: HTMLElement | null = null;
 
-function escapeHtml(value: string) {
-	return value
-		.replaceAll("&", "&amp;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;")
-		.replaceAll('"', "&quot;")
-		.replaceAll("'", "&#039;");
-}
-
 function mentionHints(query: string) {
-	const normalizedQuery = query.toLocaleLowerCase();
-	return (props.mentionCandidates || [])
-		.filter((candidate) =>
-			[candidate.username, candidate.displayName].some((value) =>
-				String(value || "").toLocaleLowerCase().includes(normalizedQuery),
-			),
-		)
-			.slice(0, 8)
-			.map((candidate) => ({
-				html: `<strong>@${escapeHtml(candidate.username)}</strong> ${escapeHtml(candidate.displayName || "")}`,
-				value: `@${candidate.username}`,
-			}));
+	return buildVditorMentionHints(props.mentionCandidates || [], query);
 }
 
 function syncValue() {
@@ -112,7 +93,8 @@ onMounted(() => {
 				delay: 100,
 				emoji: {},
 				extend: [{ key: "@", hint: mentionHints }],
-				parse: false,
+				// 让补全与草稿、粘贴共用已安装的 Lute 净化出口，不允许直接插入原始 HTML。
+				parse: true,
 			},
 			i18n: props.runtime.i18n,
 			icon: undefined,

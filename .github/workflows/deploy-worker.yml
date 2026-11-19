@@ -48,6 +48,10 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm test
+      - name: Install security test browser
+        run: npx playwright install --with-deps chromium
+      - name: Check editor HTML boundaries
+        run: npm run test:editor-security
       - name: Build frontend assets
         run: npm run build
       - name: Validate message retention

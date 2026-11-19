@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { isValidNewUsername, USERNAME_RULE_ERROR } from '../../shared/username.ts';
 import { cors } from 'hono/cors';
 import {
   deleteSession,
@@ -137,6 +138,7 @@ app.post('/api/register-links/:token/register', async (c) => {
   if (!username || !password) {
     return errorResponse('用户名和密码不能为空');
   }
+  if (!isValidNewUsername(username)) return errorResponse(USERNAME_RULE_ERROR);
   if (isConfiguredAdminUsername(c.env, username)) {
     return errorResponse('该用户名不可用于邀请注册');
   }

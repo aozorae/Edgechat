@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { hashPassword } from "../../worker/src/auth.js";
 import { activeUserSql } from "../../worker/src/user-status.js";
+import { isValidNewUsername, USERNAME_RULE_ERROR } from "../../shared/username.ts";
 
 function escapeSql(value) {
   return String(value).replace(/'/g, "''");
@@ -14,6 +15,7 @@ export async function generateBootstrapSql({ username, password, displayName = u
   username = String(username || "").trim();
   if (!username) throw new Error("Missing required environment variable: EDGECHAT_ADMIN_USERNAME (or legacy CFCHAT_ADMIN_USERNAME)");
   if (!password) throw new Error("Missing required environment variable: EDGECHAT_ADMIN_PASSWORD (or legacy CFCHAT_ADMIN_PASSWORD)");
+  if (!isValidNewUsername(username)) throw new Error(USERNAME_RULE_ERROR);
   const hashed = await hashPassword(password);
 
   const safeUsername = escapeSql(username);

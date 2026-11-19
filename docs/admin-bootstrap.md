@@ -4,6 +4,8 @@
 
 **没有默认管理员密码，也没有公开注册入口。** `worker/schema.sql` 只创建数据库结构，不创建用户。`ADMIN_USERNAMES` 仅保留管理员用户名，不能创建账号或设置密码。管理员登录后，在「注册邀请」创建用户或生成邀请链接，其他用户才能注册。
 
+从 `2.21.1` 起，新账号用户名为 1–64 个 Unicode 字符，以字母或数字开头，其余只允许字母、数字、组合音标、下划线、点和连字符；适用于邀请、后台建号及管理员初始化。显示名不受此标识规则限制。已有账号不会自动改名，登录与 Actions 对已有超管的密码同步仍兼容旧名。
+
 ### GitHub Actions 部署
 
 在自己的仓库 `Settings -> Secrets and variables -> Actions -> Secrets` 添加：
@@ -67,6 +69,8 @@ fi
 ## English
 
 **There is no default administrator password and no public sign-up.** `worker/schema.sql` creates tables, not accounts. `ADMIN_USERNAMES` only reserves names; it cannot create an account or set its password. After signing in, an administrator creates users or registration invitation links in the admin panel.
+
+Since `2.21.1`, new usernames contain 1–64 Unicode characters, start with a letter or number, and otherwise allow only letters, numbers, combining marks, underscores, dots and hyphens. This applies to invitations, admin-created users and administrator initialization, not display names. Existing accounts are not renamed; login and Actions password sync for existing administrators remain compatible with legacy names.
 
 ### GitHub Actions
 
