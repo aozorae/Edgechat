@@ -2,6 +2,10 @@
 
 EdgeChat 从 `2.1.2` 起正式采用语义化版本。更早的版本号依据已经完成的主要里程碑补记，用于说明项目演进，不对应历史 Git 标签。
 
+## 2.21.3 - 2026-11-22
+
+- 退役旧版 Jetpack Compose 客户端，移除独立 Gradle 工程和 CI。Capacitor 继续通过现有工作流构建和签名发布，服务端继续提供 API v1。
+
 ## 2.21.2 - 2026-11-21
 
 - 安全更新：升级 Worker 路由框架 Hono、网页净化库 DOMPurify、Markdown 渲染器 markdown-it 和 Vue，锁定修复后的 `source-map-js`，覆盖 Dependabot 报告的路由与请求处理、HTML 净化、渲染性能及源码映射解析问题。

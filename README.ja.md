@@ -221,7 +221,7 @@ Docker の説明は [DOCKER.md](DOCKER.md) を参照してください。
 
 現在、Room オフラインデータベース、WorkManager Outbox、FCM は含まれていません。アプリが停止してメッセージを受信できない場合、バックグラウンドでの即時通知は保証されません。
 
-ネイティブ `android/` Kotlin + Jetpack Compose クライアントは一時的に廃止され、既定のリリース版ではありません。ソース、API v1 契約、独立した CI は一時的に保持しています。
+旧 Jetpack Compose クライアントの開発は終了しました。サーバーは引き続き `/api/v1` を提供します。
 
 詳細は [Android クライアントドキュメント](https://echat.azora.top/guide/android.html) を参照してください。
 
@@ -296,7 +296,6 @@ Edgechat/
 │  ├─ migrations/        # データベースマイグレーション
 │  └─ src/               # API、認証、Durable Objects
 ├─ capacitor/            # Web UI ベースの Android クライアント
-├─ android/              # 一時的に保持されるネイティブ Android クライアント
 ├─ .github/workflows/    # 自動デプロイと CI
 ├─ wrangler.toml
 ├─ wrangler.demo.toml

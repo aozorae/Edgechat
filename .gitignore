@@ -24,14 +24,7 @@ worker/src/generated/
 # 私有视频工程与输出，不随产品源码发布。
 /video/
 
-# Android local/build outputs
-android/.gradle/
-android/.kotlin/
-android/**/build/
-android/local.properties
-android/signing.properties
-android/*.jks
-android/*.keystore
+# Capacitor Android local/build outputs
 capacitor/android/.gradle/
 capacitor/android/.kotlin/
 capacitor/android/**/build/

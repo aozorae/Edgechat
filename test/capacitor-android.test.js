@@ -66,12 +66,11 @@ test("Capacitor Android CI builds an independent tested APK", () => {
 	assert.match(viteConfig, /target: 'es2020'/);
 });
 
-test("Capacitor and Compose clients keep separate application IDs", () => {
-	const capacitorConfig = read("../capacitor/capacitor.config.json");
-	const nativeBuild = read("../android/app/build.gradle.kts");
-	assert.match(capacitorConfig, /com\.aozorae\.edgechat\.web/);
-	assert.match(nativeBuild, /com\.aozorae\.edgechat/);
-	assert.doesNotMatch(nativeBuild, /com\.aozorae\.edgechat\.web/);
+test("Capacitor keeps its published Android application ID", () => {
+	const config = JSON.parse(read("../capacitor/capacitor.config.json"));
+	const appBuild = read("../capacitor/android/app/build.gradle");
+	assert.equal(config.appId, "com.aozorae.edgechat.web");
+	assert.match(appBuild, /applicationId "com\.aozorae\.edgechat\.web"/);
 });
 
 test("Capacitor asks for a server at sign-in and registers the Kotlin bridge", () => {

@@ -1,3 +1,0 @@
--keepattributes Signature,*Annotation*
--keep class com.aozorae.edgechat.core.network.dto.** { *; }
--dontwarn org.conscrypt.**

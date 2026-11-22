@@ -230,7 +230,7 @@ The `capacitor/` client bundles the Vue Web UI in its APK and uses a small amoun
 
 Room offline database, WorkManager Outbox, and FCM are not currently included; when the app stops receiving messages, background instant notifications are not guaranteed.
 
-The native `android/` Kotlin + Jetpack Compose client is temporarily deprecated and is no longer the default distribution. Its source, API v1 contract, and separate CI are temporarily retained.
+The legacy Jetpack Compose client has been retired. The server continues to provide `/api/v1`.
 
 See the [Android client documentation](https://echat.azora.top/guide/android.html) for complete details.
 
@@ -305,7 +305,6 @@ Edgechat/
 │  ├─ migrations/        # Database migrations
 │  └─ src/               # APIs, authentication, and Durable Objects
 ├─ capacitor/            # Web UI-based Android client
-├─ android/              # Temporarily retained native Android client
 ├─ .github/workflows/    # Automated deployment and CI
 ├─ wrangler.toml
 ├─ wrangler.demo.toml

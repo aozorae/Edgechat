@@ -3,18 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8").replaceAll("\r\n", "\n");
-const ci = read("../.github/workflows/android-ci.yml");
+const ci = read("../.github/workflows/capacitor-android-ci.yml");
 const release = read("../.github/workflows/android-release.yml");
 const worker = read("../.github/workflows/deploy-worker.yml");
 const demo = read("../.github/workflows/deploy-demo.yml");
-
-test("Android CI validates the wrapper and builds a tested debug APK", () => {
-	assert.match(ci, /gradle\/actions\/wrapper-validation@v4/);
-	assert.match(ci, /testDebugUnitTest lintDebug assembleDebug/);
-	assert.match(ci, /assembleDebugAndroidTest/);
-	assert.match(ci, /android\/app\/build\/outputs\/apk\/debug\/app-debug\.apk/);
-	assert.match(ci, /docs\/api\/\*\*/);
-});
 
 test("Android release signs and publishes the primary Capacitor client", () => {
 	for (const secret of [
@@ -45,8 +37,6 @@ test("Worker ignores Android-only paths and JavaScript workflows use Node 24", (
 	assert.doesNotMatch(worker, /android\/\*\*/);
 	for (const workflow of [worker, demo, ci, release]) {
 		assert.match(workflow, /actions\/checkout@v5/);
-	}
-	for (const workflow of [worker, demo, release]) {
 		assert.match(workflow, /actions\/setup-node@v5/);
 		assert.match(workflow, /node-version: "24"/);
 	}
