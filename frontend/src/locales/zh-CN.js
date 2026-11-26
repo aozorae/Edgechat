@@ -457,6 +457,8 @@ export default {
   'users.promptNewPassword': '为 {name} 设置新密码',
   'users.confirmDelete': '确认删除用户 {name} 吗？',
   'storage.title': '存储统计',
+  'storage.uploadLimit': '单文件上传上限（MiB）',
+  'storage.uploadMaximum': '当前部署最高可设为 {max} MiB。',
   'storage.description': '按用户统计当前实际存在的文件与占用空间。',
   'storage.columns.fileCount': '文件数量',
   'storage.columns.bytes': '实际占用',

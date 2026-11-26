@@ -1,5 +1,5 @@
 import { dispatchAuthInvalid, getStoredToken } from './auth-storage.js';
-import { getEdgeChatServerOrigin, resolveServerUrl } from './capacitor-platform.ts';
+import { getEdgeChatServerOrigin, isCapacitorAndroid, resolveServerUrl } from './capacitor-platform.ts';
 import { t } from './i18n.js';
 import { localizedError, localizeErrorMessage } from './localized-error.js';
 import { getRuntimeFileUrl, isDemoMode, requestRuntime } from './runtime.js';
@@ -74,6 +74,9 @@ export default {
   unprotectUser(id, expectedAuthzVersion) { return request(`/admin/rbac/users/${id}/unprotect`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: { expectedAuthzVersion } }); },
   adminAudit(offset = 0) { return request(`/admin/audit?offset=${offset}`); },
   adminStorage() { return request('/admin/storage'); },
+  saveUploadLimit(bytes) {
+    return request('/admin/storage/limit', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: { bytes } });
+  },
   callConfig(roomId) {
     return request(`/calls/${roomId}/config`, { signal: AbortSignal.timeout(10000) });
   },
@@ -238,7 +241,15 @@ export default {
   unblockUser(userId) {
     return request(`/users/${Number(userId)}/block`, { method: 'DELETE' });
   },
-  uploadFile(file) {
+  async uploadFile(file) {
+    if (!isDemoMode && !isCapacitorAndroid && globalThis.crypto?.subtle) {
+      const options = await request('/uploads/options');
+      if (file.size > options.maxBytes) throw new Error(localizeErrorMessage(`文件大小不能超过 ${Math.round(options.maxBytes / 1048576)}MB`));
+      if (options.publicKey) {
+        const { uploadDirect } = await import('./direct-upload.ts');
+        return uploadDirect(file, options, request);
+      }
+    }
     const form = new FormData();
     form.append('file', file);
     return request('/upload', {

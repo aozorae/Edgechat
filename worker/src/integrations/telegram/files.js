@@ -6,6 +6,8 @@ import {
 import { decryptAttachment, encryptAttachment } from "../../encryption.js";
 import { downloadTelegramFile, getTelegramFile } from "./client.js";
 import { getFileStorage } from "../../storage/index.ts";
+import { isDirectFile, serveDirectFile } from "../../storage/direct-read.ts";
+import { getUploadedFileMetadata } from "../../data/uploaded-files.js";
 
 export const TELEGRAM_BRIDGE_FILE_LIMIT = 16 * 1024 * 1024;
 export const TELEGRAM_FILE_SKIP_REASON = Object.freeze({
@@ -89,20 +91,30 @@ export async function loadEdgeChatAttachment(env, attachment) {
 			skipReason: TELEGRAM_FILE_SKIP_REASON.STORAGE_UNAVAILABLE,
 		};
 	}
-	const object = await storage.get(attachment.key);
-	if (!object) {
-		return { file: null, skipReason: TELEGRAM_FILE_SKIP_REASON.NOT_FOUND };
+	let bytes;
+	if (isDirectFile(attachment.key)) {
+		const meta = await getUploadedFileMetadata(env.DB, attachment.key);
+		if (!meta) return { file: null, skipReason: TELEGRAM_FILE_SKIP_REASON.NOT_FOUND };
+		if (meta.size > TELEGRAM_BRIDGE_FILE_LIMIT) return { file: null, skipReason: TELEGRAM_FILE_SKIP_REASON.TOO_LARGE };
+		const response = await serveDirectFile(env, attachment.key, meta, new Request('https://internal/'), 'attachment');
+		if (!response.ok) return { file: null, skipReason: TELEGRAM_FILE_SKIP_REASON.NOT_FOUND };
+		bytes = new Uint8Array(await response.arrayBuffer());
+	} else {
+		const object = await storage.get(attachment.key);
+		if (!object) {
+			return { file: null, skipReason: TELEGRAM_FILE_SKIP_REASON.NOT_FOUND };
+		}
+		bytes = (await decryptAttachment(env, await object.arrayBuffer(), attachment.key)).bytes;
 	}
-	const decrypted = await decryptAttachment(env, await object.arrayBuffer(), attachment.key);
-	if (decrypted.bytes.byteLength > TELEGRAM_BRIDGE_FILE_LIMIT) {
+	if (bytes.byteLength > TELEGRAM_BRIDGE_FILE_LIMIT) {
 		return { file: null, skipReason: TELEGRAM_FILE_SKIP_REASON.TOO_LARGE };
 	}
 	return {
 		file: {
-			bytes: decrypted.bytes,
+			bytes,
 			name: sanitizeFilename(attachment.name),
 				type: normalizeContentType(attachment.type) || "application/octet-stream",
-				size: decrypted.bytes.byteLength,
+				size: bytes.byteLength,
 				kind: attachment.kind,
 				durationMs: Number(attachment.durationMs || 0),
 			},

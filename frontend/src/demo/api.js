@@ -457,6 +457,7 @@ async function handleDemoRequest(path, options = {}) {
   if (method === 'POST' && pathname === '/upload') {
     const file = body.get('file');
     if (!file) fail('请选择文件');
+    if (file.size > (demoState.uploadLimit || 20 * 1048576)) fail('文件大小不能超过 ' + (demoState.uploadLimit || 20 * 1048576) / 1048576 + 'MB');
     return { file: storeDemoFile(file) };
   }
 
@@ -472,7 +473,14 @@ async function handleDemoRequest(path, options = {}) {
   if (method === 'POST' && pathname === '/admin/storage/scan') {
     return cloneDemo(adminStoragePayload());
   }
-  if (method === 'GET' && pathname === '/admin/storage') return { ...cloneDemo(adminStoragePayload()), scannedAt: new Date().toISOString() };
+  if (pathname === '/admin/storage/limit' && method === 'PUT') {
+    if (!demoAuthorization(findDemoUser(demoState.session.userId)).isSuperAdmin) fail('没有此操作权限');
+    if (!Number.isInteger(body.bytes / 1048576) || body.bytes < 1048576 || body.bytes > 1024 ** 3) fail('文件大小限制无效');
+    demoState.uploadLimit = body.bytes;
+    return { limits: { bytes: body.bytes, maximum: 1024 ** 3 } };
+  }
+  if (method === 'GET' && pathname === '/admin/storage') return { ...cloneDemo(adminStoragePayload()), scannedAt: new Date().toISOString(),
+    limits: { bytes: demoState.uploadLimit || 20 * 1048576, maximum: 1024 ** 3 } };
   if (method === 'GET' && pathname === '/admin/users') {
     const offset = Number(url.searchParams.get('offset') || 0);
     const includePermissions = demoAuthorization(findDemoUser(demoState.session.userId)).isSuperAdmin;

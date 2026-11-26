@@ -17,6 +17,7 @@ function storageScanHandler() {
   let handler;
   const app = {
     get() {},
+    put() {},
     post(path, candidate) {
       if (path === '/api/admin/storage/scan') handler = candidate;
     },

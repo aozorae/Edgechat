@@ -34,7 +34,7 @@ if (initialNotificationTarget) queueNativeRoomTarget(initialNotificationTarget);
 // 仅在浏览器支持且非 Capacitor 原生环境下注册。
 if ('serviceWorker' in navigator && !isCapacitorNative) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    navigator.serviceWorker.register('/sw.js', { type: 'module' }).catch(() => {
       // 注册失败不影响应用功能，忽略即可。
     });
   });

@@ -1,8 +1,19 @@
-// Edgechat minimal service worker.
-// Purpose: satisfy the PWA installability requirement so Chrome/Edge show the
-// install button in the address bar. It intentionally does NOT cache anything
-// and does NOT intercept API, /files, or WebSocket traffic — every request is
-// passed straight through to the network.
+import { decryptedResponse } from './attachment-crypto.js';
+
+async function downloadAttachment(request) {
+  const headers = new Headers(request.headers);
+  headers.set('x-edgechat-file', 'descriptor');
+  const descriptor = await fetch(request.url, { headers, credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: request.signal });
+  // 未启用直传时服务端返回普通文件；专用响应头区分描述符与用户上传的 JSON。
+  if (descriptor.headers.get('x-edgechat-descriptor') !== 'v2') return descriptor;
+  const info = await descriptor.json();
+  return decryptedResponse(info, request.headers.get('range'), async (offset, length) => {
+    const res = await fetch(info.url, { headers: { Range: `bytes=${offset}-${offset + length - 1}` },
+      credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', cache: 'no-store', signal: request.signal });
+    if (res.status !== 206 || !res.body) throw new Error('附件分块读取失败');
+    return res.body;
+  });
+}
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -25,6 +36,10 @@ self.addEventListener('fetch', (event) => {
   // Same-origin GET requests, including page navigations, pass through here;
   // API, uploads and cross-origin requests use the browser's default handling.
   if (url.origin !== self.location.origin) {
+    return;
+  }
+  if (/^\/files\/\d+(?:%2f|\/)direct-v2(?:%2f|\/)[a-f0-9-]{36}$/i.test(url.pathname)) {
+    event.respondWith(downloadAttachment(request));
     return;
   }
   if (url.pathname.startsWith('/api') || url.pathname.startsWith('/files')) {

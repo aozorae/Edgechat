@@ -457,6 +457,8 @@ export default {
   'users.promptNewPassword': 'Set a new password for {name}',
   'users.confirmDelete': 'Delete user {name}?',
   'storage.title': 'Storage usage',
+  'storage.uploadLimit': 'Maximum file size (MiB)',
+  'storage.uploadMaximum': 'This deployment supports up to {max} MiB.',
   'storage.description': 'Current files and storage usage, grouped by user.',
   'storage.columns.fileCount': 'File count',
   'storage.columns.bytes': 'Storage used',

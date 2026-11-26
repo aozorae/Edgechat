@@ -20,6 +20,7 @@ export const ADMIN_POLICIES = [
   policy('dms.list', 'GET', 'dms', [], { superOnly: true }),
   policy('storage.scan', 'POST', 'storage/scan', ['storage.scan'], { fields: [], audit: true }),
   policy('storage.read', 'GET', 'storage', ['storage.read']),
+  policy('storage.limit', 'PUT', 'storage/limit', [], { superOnly: true, fields: ['bytes'], audit: true }),
   policy('site.read', 'GET', 'site-settings', ['site.read']),
   policy('site.update', 'PATCH', 'site-settings', ['site.appearance.update'], { fields: ['siteName', 'siteIconUrl', 'colorTheme'], audit: true }),
   policy('telegram.read', 'GET', 'telegram', ['telegram.read']),

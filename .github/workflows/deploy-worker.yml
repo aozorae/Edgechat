@@ -186,6 +186,14 @@ jobs:
           if [[ "${EDGECHAT_S3//[[:space:]]/}" == "r2" ]]; then
             printf '%s' 'r2' | npx wrangler secret put EDGECHAT_S3 --config wrangler.ci.toml
           fi
+      - name: Configure direct transfers for the deployed R2 bucket
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ steps.ensure_resources.outputs.r2_bucket_name }}
+          EDGECHAT_R2_ORIGINS: ${{ vars.EDGECHAT_R2_ORIGINS }}
+        if: steps.ensure_resources.outputs.r2_available == 'true'
+        run: node .github/scripts/configure-r2-direct.mjs wrangler.ci.toml
       - name: Configure TURN secrets (optional)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

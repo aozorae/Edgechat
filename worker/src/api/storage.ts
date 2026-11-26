@@ -3,11 +3,22 @@ import { ApiError } from '../errors.js';
 import { summarizeR2Objects } from '../storage-statistics.js';
 import { listStorageOwners } from '../data/users.js';
 import { getFileStorage } from '../storage/index.ts';
+import { MIB, uploadLimits } from '../storage/direct-config.ts';
+import { parseJsonRequest } from '../utils.js';
 
 export function registerStorageRoutes(app) {
   app.get('/api/admin/storage', async (c) => {
     const row = await c.env.DB.prepare("SELECT setting_value FROM site_settings WHERE setting_key = 'admin_storage_snapshot'").first();
-    return c.json(row ? JSON.parse(row.setting_value) : { items: [], users: [], scannedAt: null });
+    const snapshot = row ? JSON.parse(row.setting_value) : { items: [], users: [], scannedAt: null };
+    return c.json({ ...snapshot, limits: await uploadLimits(c.env) });
+  });
+  app.put('/api/admin/storage/limit', async c => {
+    const { bytes } = await parseJsonRequest(c.req.raw);
+    const { maximum } = await uploadLimits(c.env);
+    if (!Number.isInteger(bytes / MIB) || bytes < MIB || bytes > maximum) throw new ApiError('文件大小限制无效');
+    await c.env.DB.prepare(`INSERT INTO site_settings(setting_key, setting_value) VALUES ('max_upload_bytes', ?)
+      ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP`).bind(String(bytes)).run();
+    return c.json({ limits: await uploadLimits(c.env) });
   });
   app.post('/api/admin/storage/scan', async (c) => {
     const storage = getFileStorage(c.env);

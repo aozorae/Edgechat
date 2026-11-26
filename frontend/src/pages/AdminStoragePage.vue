@@ -6,6 +6,7 @@ import UiButton from '../components/ui/Button.vue';
 import UiSurface from '../components/ui/Surface.vue';
 import { t } from '../i18n.js';
 import { can } from '../authorization.ts';
+import store from '../store.js';
 import {
   buildStorageRows,
   formatByteSize,
@@ -21,6 +22,18 @@ const users = ref([]);
 const summaries = ref(new Map());
 const refreshedAt = ref(null);
 const sort = ref({ key: 'bytes', direction: 'desc' });
+const limits = ref(null);
+const limitMiB = ref(20);
+const saving = ref(false);
+async function saveLimit() {
+  saving.value = true;
+  error.value = '';
+  try {
+    limits.value = (await api.saveUploadLimit(limitMiB.value * 1048576)).limits;
+    limitMiB.value = limits.value.bytes / 1048576;
+  } catch (e) { error.value = e.message; }
+  finally { saving.value = false; }
+}
 
 const rows = computed(() => buildStorageRows(users.value, summaries.value));
 const sortedRows = computed(() => sortStorageRows(rows.value, sort.value));
@@ -98,6 +111,8 @@ function formatShare(value) {
 onMounted(async () => {
   try {
     const payload = await api.adminStorage();
+    limits.value = payload.limits;
+    if (limits.value) limitMiB.value = limits.value.bytes / 1048576;
     users.value = payload.users; mergeStorageSummary(summaries.value, payload.items);
     refreshedAt.value = payload.scannedAt; hasResult.value = Boolean(payload.scannedAt);
   } catch (e) { error.value = e.message; }
@@ -119,6 +134,12 @@ onMounted(async () => {
 
     <div class="admin-section__body">
       <p v-if="error" class="error-text">{{ error }}</p>
+      <form v-if="limits && store.session?.isSuperAdmin" class="panel" @submit.prevent="saveLimit">
+        <label for="attachment-limit">{{ t('storage.uploadLimit') }}</label>
+        <input id="attachment-limit" v-model.number="limitMiB" type="number" required min="1" :max="Math.floor(limits.maximum / 1048576)" step="1">
+        <UiButton type="submit" :disabled="saving || limitMiB * 1048576 === limits.bytes">{{ t('common.save') }}</UiButton>
+        <p class="muted">{{ t('storage.uploadMaximum', { max: Math.floor(limits.maximum / 1048576) }) }}</p>
+      </form>
 
       <template v-if="hasResult">
         <section class="admin-metric-grid" :aria-label="t('storage.summary')">

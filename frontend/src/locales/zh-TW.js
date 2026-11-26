@@ -530,6 +530,8 @@ export default {
   "users.promptNewPassword": "為 {name} 設置新密碼",
   "users.confirmDelete": "確認刪除用戶 {name} 嗎？",
   "storage.title": "存儲統計",
+  "storage.uploadLimit": "單檔上傳上限（MiB）",
+  "storage.uploadMaximum": "目前部署最高可設為 {max} MiB。",
   "storage.description": "按用戶統計當前實際存在的文件與佔用空間。",
   "storage.columns.fileCount": "文件數量",
   "storage.columns.bytes": "實際佔用",

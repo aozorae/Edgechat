@@ -9,6 +9,9 @@ import { normalizeContentType, sanitizeFilename } from '../attachment-metadata.j
 import { validateSession } from '../session.js';
 import { errorResponse, requestBodyTooLarge } from '../utils.js';
 import { getFileStorage, hasFileStorage } from '../storage/index.ts';
+import { proxyCeiling, uploadLimits } from '../storage/direct-config.ts';
+import { isDirectFile, serveDirectFile } from '../storage/direct-read.ts';
+import { ApiError } from '../errors.js';
 
 const FILE_RESPONSE_CACHE_CONTROL = 'private, no-store';
 const UPLOAD_BODY_OVERHEAD_BYTES = 1024 * 1024;
@@ -51,15 +54,14 @@ function contentDispositionValue(kind, filename) {
   return `${kind}; filename="${safeAscii}"; filename*=UTF-8''${encodeURIComponent(safeUtf8)}`;
 }
 
-function validateUpload(env, file) {
-  const maxFileSize = Number(env.MAX_FILE_SIZE || 20971520);
+export function validateUpload(env, file, maxFileSize) {
   if (file.size > maxFileSize) {
-    throw new Error(`文件大小不能超过 ${Math.round(maxFileSize / 1024 / 1024)}MB`);
+    throw new ApiError(`文件大小不能超过 ${Math.round(maxFileSize / 1024 / 1024)}MB`, 413);
   }
 
   const contentType = normalizeContentType(file.type);
   if (BLOCKED_MIME_TYPES.has(contentType)) {
-    throw new Error('该文件类型不允许上传');
+    throw new ApiError('该文件类型不允许上传');
   }
 
   const allowed = String(env.ALLOWED_FILE_TYPES || '')
@@ -68,7 +70,7 @@ function validateUpload(env, file) {
     .filter(Boolean);
 
   if (allowed.length && !allowed.some((prefix) => contentType.startsWith(prefix))) {
-    throw new Error('该文件类型不允许上传');
+    throw new ApiError('该文件类型不允许上传');
   }
 }
 
@@ -79,7 +81,7 @@ export function registerUploadRoutes(app) {
     }
 
     const session = c.get('session');
-    const maxFileSize = Number(c.env.MAX_FILE_SIZE || 20971520);
+    const maxFileSize = (await uploadLimits(c.env)).proxyBytes;
     if (requestBodyTooLarge(c.req.raw, maxFileSize + UPLOAD_BODY_OVERHEAD_BYTES)) {
       return errorResponse(`文件大小不能超过 ${Math.round(maxFileSize / 1024 / 1024)}MB`, 413);
     }
@@ -90,12 +92,12 @@ export function registerUploadRoutes(app) {
     }
 
     try {
-      const result = await saveUploadedFile(c.env, session, file);
+      const result = await saveUploadedFile(c.env, session, file, { maxFileSize });
       return c.json({ file: result.file });
     } catch (error) {
       const message = String(error?.message || '');
       if (message.startsWith('文件大小不能超过') || message === '该文件类型不允许上传') {
-        return errorResponse(message);
+        return errorResponse(message, error.status || 400);
       }
       throw error;
     }
@@ -117,6 +119,13 @@ export function registerUploadRoutes(app) {
       return errorResponse('当前部署没有绑定 R2，无法读取附件', 503);
     }
 
+    if (isDirectFile(key)) {
+      const metadata = await getUploadedFileMetadata(c.env.DB, key);
+      if (!metadata) return new Response('Not Found', { status: 404 });
+      const type = metadata.contentType;
+      const disposition = contentDispositionValue(isInlineContentType(type) ? 'inline' : 'attachment', metadata.filename);
+      return serveDirectFile(c.env, key, metadata, c.req.raw, disposition);
+    }
     const [object, fileMetadata] = await Promise.all([
       storage.get(key),
       getUploadedFileMetadata(c.env.DB, key)
@@ -163,8 +172,8 @@ export function registerUploadRoutes(app) {
   });
 }
 
-export async function saveUploadedFile(env, session, file, { clientUploadId = null } = {}) {
-  validateUpload(env, file);
+export async function saveUploadedFile(env, session, file, { clientUploadId = null, maxFileSize = proxyCeiling(env) } = {}) {
+  validateUpload(env, file, maxFileSize);
   const storage = getFileStorage(env);
   if (clientUploadId) {
     const existing = await getUploadedFileByClientId(env.DB, session.userId, clientUploadId);

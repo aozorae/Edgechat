@@ -546,6 +546,7 @@ components:
           required: [maxUploadBytes, messageRetentionDays]
           properties:
             maxUploadBytes: { type: integer }
+            maxDirectUploadBytes: { type: integer, description: Web direct transfer limit in bytes. Zero when unavailable. }
             messageRetentionDays: { type: integer }
         features:
           type: object
@@ -555,6 +556,7 @@ components:
             realtimeTickets: { type: boolean }
             idempotentMessages: { type: boolean }
             idempotentUploads: { type: boolean }
+            directUploads: { type: boolean, description: The web client can transfer encrypted multipart files directly to R2. }
             roomSync: { type: boolean }
             backgroundPush: { type: boolean, const: false }
     LoginRequest:

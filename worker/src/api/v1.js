@@ -1,4 +1,5 @@
 import { verifyPassword } from '../auth.js';
+import { directEnabled, uploadLimits } from '../storage/direct-config.ts';
 import { verifyLoginSecurity } from '../login-security.ts';
 import { getLoginVerification } from '../data/login-verification.ts';
 import { saveUploadedFile } from './upload.js';
@@ -85,13 +86,17 @@ async function convertLegacyError(response) {
 
 export function registerV1Routes(app) {
   app.get('/api/v1/capabilities', async (c) => {
-    const site = await getSiteSettings(c.env.DB);
+    const [site, limits, loginVerification] = await Promise.all([
+      getSiteSettings(c.env.DB), uploadLimits(c.env), getLoginVerification(c.env.DB)
+    ]);
+    const directUploads = directEnabled(c.env);
     return c.json({
       apiVersion: 1,
       site,
-      loginVerification: await getLoginVerification(c.env.DB),
+      loginVerification,
       limits: {
-        maxUploadBytes: Number(c.env.MAX_FILE_SIZE || 20971520),
+        maxUploadBytes: limits.proxyBytes,
+        maxDirectUploadBytes: directUploads ? limits.bytes : 0,
         messageRetentionDays: Number(c.env.MESSAGE_RETENTION_DAYS || 30)
       },
       features: {
@@ -99,6 +104,7 @@ export function registerV1Routes(app) {
         realtimeTickets: true,
         idempotentMessages: true,
         idempotentUploads: hasFileStorage(c.env),
+        directUploads,
         roomSync: true,
         backgroundPush: false
       }
@@ -272,7 +278,7 @@ export function registerV1Routes(app) {
     if (!hasFileStorage(c.env)) {
       return v1ErrorResponse('attachments_unavailable', '当前部署没有绑定 R2，无法上传附件', 503);
     }
-    const maxFileSize = Number(c.env.MAX_FILE_SIZE || 20971520);
+    const maxFileSize = (await uploadLimits(c.env)).proxyBytes;
     if (requestBodyTooLarge(c.req.raw, maxFileSize + 1024 * 1024)) {
       return v1ErrorResponse(
         'payload_too_large',
@@ -290,12 +296,12 @@ export function registerV1Routes(app) {
       return v1ErrorResponse('client_upload_id_invalid', 'clientUploadId 必须是 UUID');
     }
     try {
-      const result = await saveUploadedFile(c.env, c.get('session'), file, { clientUploadId });
+      const result = await saveUploadedFile(c.env, c.get('session'), file, { clientUploadId, maxFileSize });
       return c.json(result, result.created ? 201 : 200);
     } catch (error) {
       const message = String(error?.message || '上传失败');
       if (message.startsWith('文件大小不能超过') || message === '该文件类型不允许上传') {
-        return v1ErrorResponse('upload_rejected', message);
+        return v1ErrorResponse('upload_rejected', message, error.status || 400);
       }
       throw error;
     }

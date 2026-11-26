@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { registerDirectUploads } from './api/direct-uploads.ts';
 import { isValidNewUsername, USERNAME_RULE_ERROR } from '../../shared/username.ts';
 import { cors } from 'hono/cors';
 import {
@@ -186,6 +187,7 @@ app.post('/api/auth/login', async (c) => {
 registerV1Routes(app);
 
 app.use('/api/*', authMiddleware);
+registerDirectUploads(app);
 registerLoginNetworkRoutes(app);
 
 app.get('/api/auth/session', async (c) => {

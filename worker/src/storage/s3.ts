@@ -107,8 +107,22 @@ export class S3Storage {
     if (!response.ok) throw storageError();
   }
 
-  async get(key: string) {
-    const response = await this.request(this.url(key), 'GET');
+  async head(key: string) {
+    const response = await this.request(this.url(key), 'HEAD');
+    if (response.status === 404) return null;
+    if (!response.ok) throw storageError();
+    return { customMetadata: readMetadata(response.headers), size: Number(response.headers.get('content-length')) };
+  }
+
+  async get(key: string, options?: { range: { offset: number; length: number } }) {
+    const range = options?.range;
+    const headers = new Headers();
+    if (range) headers.set('range', `bytes=${range.offset}-${range.offset + range.length - 1}`);
+    const response = await this.request(this.url(key), 'GET', { headers });
+    if (range && response.ok && response.status !== 206) {
+      await response.body?.cancel();
+      throw storageError();
+    }
     if (!response.ok) {
       await response.body?.cancel();
       if (response.status === 404) return null;
@@ -122,7 +136,7 @@ export class S3Storage {
       throw storageError();
     }
     return {
-      customMetadata,
+      customMetadata, body: response.body,
       uploaded: response.headers.has('last-modified') ? new Date(response.headers.get('last-modified') as string) : undefined,
       async arrayBuffer(): Promise<ArrayBuffer> {
         try {

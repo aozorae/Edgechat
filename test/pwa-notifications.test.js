@@ -1,16 +1,12 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { runInNewContext } from 'node:vm';
 
 import {
   parseNotificationRoomTarget,
   takeNotificationRoomTarget,
 } from '../frontend/src/notification-target.js';
 
-const swSource = readFileSync(new URL('../frontend/public/sw.js', import.meta.url), 'utf8');
-
-function runNotificationClick(clientList) {
+async function runNotificationClick(clientList) {
   const listeners = new Map();
   const opened = [];
   const self = {
@@ -21,7 +17,8 @@ function runNotificationClick(clientList) {
       async openWindow(url) { opened.push(url); },
     },
   };
-  runInNewContext(swSource, { self, URL, Number, fetch: () => {} });
+  globalThis.self = self;
+  await import('../frontend/public/sw.js?test=' + crypto.randomUUID());
   let completed;
   let closed = false;
   listeners.get('notificationclick')({
@@ -31,7 +28,9 @@ function runNotificationClick(clientList) {
     },
     waitUntil(promise) { completed = promise; },
   });
-  return { completed, opened, closed };
+  await completed;
+  delete globalThis.self;
+  return { opened, closed };
 }
 
 test('通知点击复用窗口时发送目标并聚焦', async () => {
@@ -41,8 +40,7 @@ test('通知点击复用窗口时发送目标并聚焦', async () => {
     postMessage(message) { messages.push(message); },
     async focus() { focused = true; },
   };
-  const result = runNotificationClick([client]);
-  await result.completed;
+  const result = await runNotificationClick([client]);
   assert.equal(result.closed, true);
   assert.equal(focused, true);
   assert.deepEqual(result.opened, []);
@@ -51,8 +49,7 @@ test('通知点击复用窗口时发送目标并聚焦', async () => {
 });
 
 test('通知点击冷启动时在 URL 中保留会话，读取后清除参数', async () => {
-  const result = runNotificationClick([]);
-  await result.completed;
+  const result = await runNotificationClick([]);
   const openedUrl = new URL(result.opened[0]);
   assert.equal(openedUrl.origin, 'https://chat.example');
   const browserWindow = {
