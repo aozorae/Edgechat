@@ -2,6 +2,8 @@
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import DOMPurify from "dompurify";
 import type Vditor from "vditor";
+import { t } from "../../i18n.js";
+import { parseMarkdownImageUrl } from "../../markdown-image.ts";
 import type { EdgeChatVditorRuntime } from "../../vditor-runtime.ts";
 import type { MentionUser } from "../../mentions.ts";
 import { installVditorContentSafety } from "../../vditor-content-safety.ts";
@@ -24,6 +26,7 @@ const emit = defineEmits<{
 }>();
 
 const host = ref<HTMLElement | null>(null);
+const imageLinkError = ref("");
 let editor: Vditor | null = null;
 let initialized = false;
 let alive = true;
@@ -39,6 +42,26 @@ function syncValue() {
 	const value = editor.getValue();
 	if (value !== props.modelValue) emit("update:modelValue", value);
 	return value;
+}
+
+function insertImageLink() {
+	if (!editor || props.disabled) return;
+	imageLinkError.value = "";
+	const input = window.prompt(t("composer.imageLinkPrompt"));
+	if (!input?.trim()) return;
+	const url = parseMarkdownImageUrl(input.trim());
+	if (!url) {
+		imageLinkError.value = t("composer.invalidImageLink");
+		return;
+	}
+	editor.focus();
+	editor.insertMD(`![${t("composer.imageAlt")}](<${url.href}>)`);
+	syncValue();
+}
+
+function stopImagePopover(event: MouseEvent) {
+	// Vditor 的原生浮层直接修改 img.src，绕过编辑 DOM 的链接校验。
+	if (event.target instanceof HTMLImageElement) event.stopPropagation();
 }
 
 function clipboardText(data: DataTransfer | null) {
@@ -127,6 +150,13 @@ onMounted(() => {
 				"inline-code",
 				"code",
 				"link",
+				{
+					name: "image-link",
+					tip: t("composer.insertImageLink"),
+					tipPosition: "s",
+					icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+					click: insertImageLink,
+				},
 				"table",
 				"|",
 				"undo",
@@ -201,13 +231,20 @@ defineExpose({
 </script>
 
 <template>
-	<div ref="host" class="composer-vditor"></div>
+	<div ref="host" class="composer-vditor" @click.capture="stopImagePopover"></div>
+	<p v-if="imageLinkError" class="composer-image-error" role="alert">{{ imageLinkError }}</p>
 </template>
 
 <style scoped>
 .composer-vditor {
 	width: 100%;
 	min-width: 0;
+}
+
+.composer-image-error {
+	margin: 0.25rem 0;
+	color: var(--vditor-error-color, #d23f31);
+	font-size: 0.875rem;
 }
 
 /* 工具栏在窄屏内部横向滚动，发送与收起按钮始终留在编辑器外部。 */

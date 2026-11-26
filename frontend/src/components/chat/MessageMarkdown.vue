@@ -149,13 +149,12 @@ function stopLinkGesture(event: Event) {
 }
 
 /* biome-ignore lint/correctness/noUnknownPseudoClass: Vue deep selector */
-.message-markdown :deep(.message-image-link)::before {
-	content: "[";
-}
-
-/* biome-ignore lint/correctness/noUnknownPseudoClass: Vue deep selector */
-.message-markdown :deep(.message-image-link)::after {
-	content: "]";
+.message-markdown :deep(.message-image) {
+	max-width: 100%;
+	max-height: 24rem;
+	object-fit: contain;
+	vertical-align: middle;
+	border-radius: 5px;
 }
 
 /* biome-ignore lint/correctness/noUnknownPseudoClass: Vue deep selector */

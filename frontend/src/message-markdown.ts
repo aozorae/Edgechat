@@ -1,5 +1,6 @@
 import DOMPurify from "dompurify";
 import MarkdownIt from "markdown-it";
+import { parseMarkdownImageUrl } from "./markdown-image.ts";
 import type { MessageMention } from "./mentions.ts";
 import { tokenizeMessageText } from "./message-text.ts";
 
@@ -21,6 +22,7 @@ const ALLOWED_TAGS = [
 	"h4",
 	"h5",
 	"h6",
+	"img",
 	"li",
 	"ol",
 	"p",
@@ -36,7 +38,9 @@ const ALLOWED_TAGS = [
 	"tr",
 	"ul",
 ];
-const ALLOWED_ATTRIBUTES = ["class", "href", "rel", "target"];
+const ALLOWED_ATTRIBUTES = [
+	"alt", "class", "decoding", "href", "loading", "referrerpolicy", "rel", "src", "target", "title",
+];
 
 function isSafeWebUrl(value: string) {
 	try {
@@ -65,6 +69,7 @@ markdown.core.ruler.after("inline", "edgechat-message-text", (state) => {
 		const children = [];
 		for (const token of blockToken.children) {
 			if (token.type === "link_open") linkDepth += 1;
+			if (token.type === "image" && linkDepth > 0) token.meta = { insideLink: true };
 			if (token.type !== "text" || linkDepth > 0) {
 				children.push(token);
 			} else {
@@ -101,15 +106,28 @@ markdown.renderer.rules.link_open = (tokens, index, options, _environment, rende
 	return renderer.renderToken(tokens, index, options);
 };
 
-markdown.renderer.rules.image = (tokens, index) => {
+markdown.renderer.rules.image = (tokens, index, options, environment, renderer) => {
 	const token = tokens[index];
 	const source = token.attrGet("src") || "";
 	const label = token.content || source;
-	const escapedLabel = markdown.utils.escapeHtml(label);
 	if (!isSafeWebUrl(source)) {
 		return `<span class="message-image-syntax">${markdown.utils.escapeHtml(`![${label}](${source})`)}</span>`;
 	}
-	return `<a class="message-link message-image-link" href="${markdown.utils.escapeHtml(source)}" target="_blank" rel="noopener noreferrer">${escapedLabel}</a>`;
+
+	const url = parseMarkdownImageUrl(source);
+	let content = markdown.utils.escapeHtml(label);
+	if (url) {
+		// 由浏览器直连图床，减少历史消息滚动时的请求，并避免发送聊天页 Referer。
+		token.attrSet("src", url.href);
+		token.attrSet("alt", renderer.renderInlineAsText(token.children || [], options, environment) || url.href);
+		token.attrSet("class", "message-image");
+		token.attrSet("loading", "lazy");
+		token.attrSet("decoding", "async");
+		token.attrSet("referrerpolicy", "no-referrer");
+		content = renderer.renderToken(tokens, index, options);
+	}
+	if (token.meta?.insideLink) return content;
+	return `<a class="message-link message-image-link" href="${markdown.utils.escapeHtml(url?.href || source)}" target="_blank" rel="noopener noreferrer">${content}</a>`;
 };
 
 markdown.renderer.rules.edgechat_mention = (tokens, index) => {
@@ -139,7 +157,7 @@ export function renderMessageMarkdown(
 	currentUserId?: number,
 ) {
 	return DOMPurify.sanitize(renderMessageMarkdownHtml(content, mentions, currentUserId), {
-		ADD_URI_SAFE_ATTR: ["target", "rel"],
+		ADD_URI_SAFE_ATTR: ["target", "rel", "loading", "decoding", "referrerpolicy"],
 		ALLOWED_ATTR: ALLOWED_ATTRIBUTES,
 		ALLOWED_TAGS,
 		ALLOW_DATA_ATTR: false,

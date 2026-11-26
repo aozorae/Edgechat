@@ -2,14 +2,16 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { createServer } from "vite";
 
-// 只挂载真实编辑器组件；无账号、会话或线上后端，且阻断一切非本地网络请求。
-const fixture = `<!doctype html><html><body><div id="app"></div><script type="module">
+// 挂载真实编辑器和消息正文，图床请求由测试拦截并返回图片。
+const fixture = `<!doctype html><html><body><div id="app"></div><div id="message"></div><script type="module">
 import { createApp, h, ref } from "vue";
 import Editor from "/src/components/chat/VditorComposerEditor.vue";
+import MessageMarkdown from "/src/components/chat/MessageMarkdown.vue";
 import { loadVditorRuntime } from "/src/vditor-runtime.ts";
 import { installVditorContentSafety } from "/src/vditor-content-safety.ts";
 const runtime = await loadVditorRuntime("en");
 window.safety = installVditorContentSafety;
+window.showMessage = (content) => createApp({ render: () => h(MessageMarkdown, { content }) }).mount("#message");
 window.mountEditor = (username, displayName = username) => {
   window.editorApp?.unmount();
   window.editorReady = false;
@@ -48,9 +50,14 @@ try {
   const page = await browser.newPage();
   const errors = [];
   const externalRequests = [];
+  const imageRequests = [];
+  const imageUrl = "https://images.example/diagram(1)?v=2&token=abc";
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/*", async (route) => {
-    if (new URL(route.request().url()).origin === new URL(origin).origin) await route.continue();
+    if (route.request().url() === imageUrl) {
+      imageRequests.push(route.request().headers());
+      await route.fulfill({ contentType: "image/gif", body: Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64") });
+    } else if (new URL(route.request().url()).origin === new URL(origin).origin) await route.continue();
     else { externalRequests.push(route.request().url()); await route.abort(); }
   });
   await page.goto(`${origin}__security-check`);
@@ -107,9 +114,28 @@ try {
   for (const text of ["**bold**", "*italic*", "~~strike~~", "item", "[X] done", "const x = 1", "https://example.com", "```html", "<div>raw HTML</div>"]) {
     assert.ok(roundtrip.markdown.includes(text), text);
   }
+
+  await page.evaluate(() => window.mountEditor("alice"));
+  await page.waitForFunction(() => window.editorReady);
+  const imageButton = page.locator('.vditor-toolbar button[data-type="image-link"]');
+  page.once("dialog", (dialog) => dialog.accept("data:image/gif,invalid"));
+  await imageButton.click();
+  await page.getByRole("alert").waitFor();
+  page.once("dialog", (dialog) => dialog.accept(imageUrl));
+  await imageButton.click();
+  const editorImage = page.locator(".vditor-wysiwyg img");
+  await page.waitForFunction(() => document.querySelector(".vditor-wysiwyg img")?.naturalWidth === 1);
+  assert.equal(await editorImage.getAttribute("referrerpolicy"), "no-referrer");
+  await page.evaluate(() => window.showMessage(window.markdown));
+  await page.locator("#message img").scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => document.querySelector("#message img")?.naturalWidth === 1);
+  assert.equal(await page.locator("#message img").getAttribute("loading"), "lazy");
+  assert.equal(await page.locator("#message img").getAttribute("referrerpolicy"), "no-referrer");
+  assert.ok(imageRequests.length >= 1);
+  assert.ok(imageRequests.every((headers) => !headers.referer));
   assert.deepEqual(errors, []);
   assert.deepEqual(externalRequests, []);
-  console.log("Vditor security: 5 real hint selections, both sanitizer exits and Markdown roundtrip passed; zero external requests.");
+  console.log("Vditor security: mention selection, sanitizer exits, Markdown roundtrip and HTTPS image rendering passed.");
 } finally {
   await browser?.close();
   await server.close();

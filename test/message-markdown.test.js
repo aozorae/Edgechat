@@ -60,15 +60,24 @@ test("提及与自动链接只进入普通文本 token", () => {
 	assert.equal((html.match(/href=/g) || []).length, 2);
 });
 
-test("原始 HTML 和危险协议保持为文本，远程图片只生成安全链接", () => {
+test("原始 HTML 和危险图片地址保持为文本，HTTPS 图片内嵌显示", () => {
 	const html = renderMessageMarkdownHtml(
-		'<script>alert(1)</script> [bad](JaVaScRiPt:alert(1)) ![说明](https://images.example/a.png) ![bad](data:text/html,x)',
+		'<img src="https://raw.example/a.png"> [bad](JaVaScRiPt:alert(1)) ![说明](https://images.example/a.png?a=1&b=2) ![bad](data:text/html,x) ![old](http://images.example/a.png) ![relative](/a.png)',
 	);
 
-	assert.doesNotMatch(html, /<script|<img|href="(?:javascript|data|vbscript):/i);
-	assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
-	assert.match(html, /class="message-link message-image-link" href="https:\/\/images\.example\/a\.png"/);
+	assert.doesNotMatch(html, /(?:src|href)="(?:javascript|data|vbscript):/i);
+	assert.equal((html.match(/<img /g) || []).length, 1);
+	assert.match(html, /&lt;img src=/);
+	assert.match(html, /<img src="https:\/\/images\.example\/a\.png\?a=1&amp;b=2" alt="说明"/);
+	assert.match(html, /loading="lazy" decoding="async" referrerpolicy="no-referrer"/);
+	assert.match(html, /href="http:\/\/images\.example\/a\.png"[^>]*>old<\/a>/);
 	assert.match(html, /!\[bad\]\(data:text\/html,x\)/);
+});
+
+test("带跳转目标的 Markdown 图片保留原来的链接", () => {
+	const html = renderMessageMarkdownHtml("[![示意图](https://images.example/a.png)](https://example.com)");
+	assert.equal((html.match(/<a /g) || []).length, 1);
+	assert.match(html, /href="https:\/\/example\.com"[^>]*><img [^>]*><\/a>/);
 });
 
 test("回复、置顶与通知摘要提取纯文本而不携带 Markdown 标记", () => {
@@ -86,8 +95,8 @@ test("最终消息渲染固定经过 DOMPurify 最小白名单", () => {
 		"utf8",
 	);
 	assert.match(source, /DOMPurify\.sanitize\(renderMessageMarkdownHtml/);
-	assert.match(source, /ADD_URI_SAFE_ATTR:\s*\["target", "rel"\]/);
+	assert.match(source, /ADD_URI_SAFE_ATTR:\s*\["target", "rel", "loading", "decoding", "referrerpolicy"\]/);
 	assert.match(source, /ALLOW_DATA_ATTR:\s*false/);
 	assert.match(source, /ALLOWED_URI_REGEXP:\s*\/\^https\?:/);
-	assert.doesNotMatch(source.match(/const ALLOWED_TAGS = \[[\s\S]*?\];/)?.[0] || "", /"img"|"iframe"/);
+	assert.doesNotMatch(source.match(/const ALLOWED_TAGS = \[[\s\S]*?\];/)?.[0] || "", /"iframe"/);
 });

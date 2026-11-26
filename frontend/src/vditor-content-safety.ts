@@ -1,4 +1,5 @@
 import DOMPurify from "dompurify";
+import { parseMarkdownImageUrl } from "./markdown-image.ts";
 
 type VditorLute = {
 	Md2VditorDOM(markdown: string): string;
@@ -50,7 +51,7 @@ function replaceHtmlBlocksWithCode(root: DocumentFragment) {
 	}
 }
 
-function removeRemoteContentBeforeMount(html: string) {
+function sanitizeEditorDom(html: string) {
 	const template = document.createElement("template");
 	template.innerHTML = html;
 	replaceHtmlBlocksWithCode(template.content);
@@ -61,7 +62,14 @@ function removeRemoteContentBeforeMount(html: string) {
 		preview.replaceChildren(document.createTextNode(source?.textContent || ""));
 	}
 	for (const image of template.content.querySelectorAll("img")) {
-		image.replaceWith(document.createTextNode(imageMarkdown(image)));
+		const url = parseMarkdownImageUrl(image.getAttribute("src") || "");
+		if (url) {
+			// 仅保留 HTTPS 图片来源，预览请求无需携带聊天页 Referer。
+			image.setAttribute("src", url.href);
+			image.setAttribute("referrerpolicy", "no-referrer");
+		} else {
+			image.replaceWith(document.createTextNode(imageMarkdown(image)));
+		}
 	}
 	for (const element of template.content.querySelectorAll(
 		"iframe, object, embed, video, audio, source, track, script, link, meta",
@@ -69,16 +77,15 @@ function removeRemoteContentBeforeMount(html: string) {
 		element.remove();
 	}
 
-	// 去除媒体不等于净化 HTML：只允许编辑器所需的结构和属性，拒绝事件、样式、
-	// SVG/MathML 与危险链接协议；保留 data-* 和编辑属性以维持 Lute 的回读能力。
+	// 只允许编辑器所需的结构和属性，保留 data-* 和编辑属性以维持 Lute 的回读能力。
 	return DOMPurify.sanitize(template.innerHTML, {
 		ALLOWED_TAGS: [
 			"p", "div", "span", "br", "wbr", "strong", "b", "em", "i", "s", "del", "strike",
-			"u", "a", "blockquote", "pre", "code", "ul", "ol", "li", "hr",
+			"u", "a", "img", "blockquote", "pre", "code", "ul", "ol", "li", "hr",
 			"h1", "h2", "h3", "h4", "h5", "h6", "table", "thead", "tbody", "tr", "th", "td", "input",
 		],
 		ALLOWED_ATTR: [
-			"class", "href", "title", "contenteditable", "spellcheck",
+			"class", "href", "src", "alt", "title", "referrerpolicy", "contenteditable", "spellcheck",
 			"type", "checked", "value", "align", "colspan", "rowspan", "start",
 		],
 		ALLOW_DATA_ATTR: true,
@@ -88,7 +95,7 @@ function removeRemoteContentBeforeMount(html: string) {
 export function installVditorContentSafety(lute: VditorLute) {
 	const renderMarkdown = lute.Md2VditorDOM.bind(lute);
 	const normalizeEditorDom = lute.SpinVditorDOM.bind(lute);
-	// Vditor 没有覆盖 WYSIWYG 全部写入路径的图片禁用开关，因此在其统一转换出口前净化。
-	lute.Md2VditorDOM = (markdown) => removeRemoteContentBeforeMount(renderMarkdown(markdown));
-	lute.SpinVditorDOM = (html) => removeRemoteContentBeforeMount(normalizeEditorDom(html));
+	// 在 Vditor 的统一转换出口净化，以覆盖草稿恢复、插入和输入后的重新渲染。
+	lute.Md2VditorDOM = (markdown) => sanitizeEditorDom(renderMarkdown(markdown));
+	lute.SpinVditorDOM = (html) => sanitizeEditorDom(normalizeEditorDom(html));
 }
