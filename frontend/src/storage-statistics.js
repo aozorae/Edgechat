@@ -1,3 +1,5 @@
+export { formatByteSize } from './file-size.ts';
+
 export function storageTimestampValue(value) {
   if (value === null || value === undefined || value === '') return 0;
   const timestamp = new Date(value).getTime();
@@ -7,21 +9,6 @@ export function storageTimestampValue(value) {
 export function formatStorageDateTime(value) {
   const timestamp = storageTimestampValue(value);
   return timestamp ? formatDateTime(timestamp) : '';
-}
-
-export function formatByteSize(value) {
-  const bytes = Math.max(0, Number(value) || 0);
-  if (bytes < 1024) return `${bytes} B`;
-
-  const units = ['KiB', 'MiB', 'GiB', 'TiB'];
-  let size = bytes / 1024;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex += 1;
-  }
-  const fractionDigits = size >= 100 ? 0 : size >= 10 ? 1 : 2;
-  return `${size.toFixed(fractionDigits)} ${units[unitIndex]}`;
 }
 
 export function mergeStorageSummary(target, items = []) {

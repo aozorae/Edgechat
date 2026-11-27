@@ -21,7 +21,8 @@ GC_R2_OPERATION_BUDGET = "300"
 SITE_ORIGINS = ""
 R2_DELETE_MAX_RETRY = "8"
 ORPHAN_UPLOAD_RETENTION_DAYS = "1"
-ALLOWED_FILE_TYPES = "image/,video/,audio/,application/pdf,text/"
+# 压缩包和 Office 文档沿用附件下载响应，允许浏览器上报的常见 MIME。
+ALLOWED_FILE_TYPES = "image/,video/,audio/,application/pdf,text/,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/gzip,application/x-gzip,application/msword,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument."
 MAX_FILE_SIZE = "20971520"
 
 # 原生边缘计数不写 D1/KV；相同账户的其他应用应使用不同 namespace_id。

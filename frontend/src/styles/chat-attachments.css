@@ -50,6 +50,10 @@
   height: 360px;
 }
 
+.message-attachment__pdf-download {
+  margin-top: 8px;
+}
+
 .message-attachment--audio {
   width: min(310px, 68vw);
 }

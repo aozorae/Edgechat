@@ -5,6 +5,7 @@ import { useOverlayLifecycle } from '../../composables/useOverlayLifecycle.js';
 import { t } from '../../i18n.js';
 import { isPdfAttachment, isPreviewableImageAttachment, isVideoAttachment } from './attachment-utils.js';
 import { isAudioAttachment } from '../../voice-message.js';
+import FileAttachmentCard from './FileAttachmentCard.vue';
 import VoiceMessage from './VoiceMessage.vue';
 
 const props = defineProps({
@@ -134,16 +135,9 @@ watch(
         loading="lazy"
         referrerpolicy="no-referrer"
       ></iframe>
-      <a :href="attachmentUrl" target="_blank" rel="noreferrer" class="chat-bubble__attachment message-attachment__file">{{ displayName }}</a>
+      <FileAttachmentCard v-if="isPdf" class="message-attachment__pdf-download" :attachment="attachment" :href="attachmentUrl" :name="displayName" />
+      <a v-else :href="attachmentUrl" target="_blank" rel="noreferrer" class="chat-bubble__attachment message-attachment__file">{{ displayName }}</a>
     </template>
-    <a
-      v-else
-      :href="attachmentUrl"
-      target="_blank"
-      rel="noreferrer"
-      class="chat-bubble__attachment message-attachment__file"
-    >
-      {{ displayName }}
-    </a>
+    <FileAttachmentCard v-else :attachment="attachment" :href="attachmentUrl" :name="displayName" />
   </div>
 </template>
