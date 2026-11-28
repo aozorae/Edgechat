@@ -5,7 +5,7 @@
     <a href="https://trendshift.io/repositories/140939?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-140939" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/140939/daily?language=JavaScript" alt="aozorae%2FEdgechat | Trendshift" width="250" height="55"/></a>
   </p>
 
-  <h3>自己的聊天空间，不必从维护服务器开始。</h3>
+  <h3>遥遥领先的cloudflare聊天系统</h3>
   <p>基于 Cloudflare 的开源自部署团队聊天系统</p>
   <p>实时群聊与私信 · Telegram 双向桥接 · 语音与文件 · 消息与附件服务端加密</p>
 
